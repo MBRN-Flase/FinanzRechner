@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Was wärst du heute wert? – Investitions-Rechner</title>
-  <meta name="description" content="Was wärst du heute wert, wenn du früher investiert hättest? Berechne es kostenlos — kein Konto, kein Aufwand." />
+  <title>Was wärst du heute wert? – Kostenloser Investitions-Rechner</title>
+  <meta name="description" content="Berechne in 10 Sekunden was du heute hättest, wenn du früher investiert hättest. Kostenlos, anonym, lokal." />
   <meta property="og:title" content="Was wärst du heute wert?" />
-  <meta property="og:description" content="Berechne was du heute hättest wenn du früher investiert hättest." />
+  <meta property="og:description" content="Finde heraus wie viel du heute hättest — wenn du früher angefangen hättest." />
   <meta property="og:type" content="website" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,38 +26,45 @@
       <span class="topnav-logo">✦</span>
       <span class="topnav-name">MBRN · Tools</span>
     </div>
-    <a class="topnav-back" href="https://flase-mbrn.github.io" target="_blank">← Alle Tools</a>
+    <a class="topnav-back" href="https://flase-mbrn.github.io/discipline-tracker" target="_blank">↗ Disziplin Tracker</a>
   </nav>
 
   <div class="container">
 
-    <!-- HEADER -->
+    <!-- HEADER — klarer Hook (ChatGPT Fix) -->
     <header class="header">
-      <span class="header-eyebrow">✦ KOSTENLOS · KEIN KONTO · LOKAL BERECHNET</span>
+      <span class="header-eyebrow">✦ KOSTENLOS · ANONYM · LOKAL BERECHNET</span>
       <h1 class="title">Was wärst du<br/><span class="title-accent">heute wert?</span></h1>
-      <p class="subtitle">Berechne was du heute hättest — wenn du früher angefangen hättest zu investieren.</p>
+      <p class="subtitle">Finde in 10 Sekunden heraus, wie viel Geld du heute hättest<br/>— wenn du früher angefangen hättest zu investieren.</p>
+
+      <!-- Trust Badges (ChatGPT Fix: Vertrauen) -->
+      <div class="trust-row">
+        <span class="trust-badge">✓ Keine Datenspeicherung</span>
+        <span class="trust-badge">✓ Lokal berechnet</span>
+        <span class="trust-badge">✓ Kein Konto nötig</span>
+      </div>
     </header>
 
-    <!-- LIVE MARKT TICKER -->
-    <div class="ticker-bar" id="ticker-bar">
-      <div class="ticker-inner" id="ticker-inner">
+    <!-- LIVE TICKER -->
+    <div class="ticker-bar">
+      <div class="ticker-inner">
         <span class="ticker-label">BTC</span>
         <span class="ticker-value" id="btc-price">lädt…</span>
         <span class="ticker-sep">·</span>
         <span class="ticker-label">ETH</span>
         <span class="ticker-value" id="eth-price">lädt…</span>
         <span class="ticker-sep">·</span>
-        <span class="ticker-label">S&P 500 ø/Jahr</span>
-        <span class="ticker-value ticker-green">+10,2%</span>
+        <span class="ticker-label">S&P 500 ø</span>
+        <span class="ticker-value ticker-green">+10,2%/Jahr</span>
         <span class="ticker-sep">·</span>
-        <span class="ticker-label">Inflation DE ø</span>
-        <span class="ticker-value ticker-red">+3,8%</span>
+        <span class="ticker-label">Inflation DE</span>
+        <span class="ticker-value ticker-red">+3,8%/Jahr</span>
       </div>
     </div>
 
     <!-- EINGABE -->
     <section class="input-card">
-      <p class="card-eyebrow">✦ Deine Situation</p>
+      <p class="card-eyebrow">✦ Schritt 1 — Deine Situation eingeben</p>
 
       <div class="input-group">
         <label class="input-label">Wie alt bist du heute?</label>
@@ -73,53 +80,50 @@
           <input type="number" class="input-field" id="age-start" value="18" min="10" max="79" />
           <span class="input-unit">Jahre</span>
         </div>
-        <p class="input-hint" id="years-hint">= 10 Jahre verpasst</p>
+        <p class="input-hint" id="years-hint">= 10 Jahre Wachstum verpasst</p>
       </div>
 
       <div class="input-group">
-        <label class="input-label">Monatlicher Betrag (damals wie heute)</label>
+        <label class="input-label">Monatlicher Betrag</label>
         <div class="input-row">
           <span class="input-prefix">€</span>
           <input type="number" class="input-field input-field--prefixed" id="monthly" value="200" min="1" />
         </div>
-        <p class="input-hint">Was du damals locker hattest</p>
+        <p class="input-hint">Was du damals locker hättest investieren können</p>
       </div>
 
       <div class="input-group">
-        <label class="input-label">Einmaliges Startkapital (optional)</label>
+        <label class="input-label">Startkapital (optional)</label>
         <div class="input-row">
           <span class="input-prefix">€</span>
           <input type="number" class="input-field input-field--prefixed" id="lump" value="0" min="0" />
         </div>
       </div>
 
-      <!-- SZENARIO AUSWAHL -->
-      <div class="scenario-section">
-        <p class="input-label">Investitionsszenario wählen</p>
-        <div class="scenario-grid" id="scenario-grid">
-          <button class="scenario-btn active" data-scenario="sp500">
-            <span class="scenario-icon">📈</span>
-            <span class="scenario-name">S&P 500</span>
-            <span class="scenario-rate">ø 10%/Jahr</span>
-          </button>
-          <button class="scenario-btn" data-scenario="world-etf">
-            <span class="scenario-icon">🌍</span>
-            <span class="scenario-name">World ETF</span>
-            <span class="scenario-rate">ø 8%/Jahr</span>
-          </button>
-          <button class="scenario-btn" data-scenario="btc">
-            <span class="scenario-icon">₿</span>
-            <span class="scenario-name">Bitcoin</span>
-            <span class="scenario-rate">ø 60%/Jahr*</span>
-          </button>
-          <button class="scenario-btn" data-scenario="savings">
-            <span class="scenario-icon">🏦</span>
-            <span class="scenario-name">Sparkonto</span>
-            <span class="scenario-rate">ø 0,5%/Jahr</span>
-          </button>
-        </div>
-        <p class="scenario-disclaimer" id="scenario-disclaimer">* Bitcoin-Rendite basiert auf historischem Durchschnitt 2013–2024. Vergangene Performance ist keine Garantie.</p>
+      <p class="card-eyebrow" style="margin-top:4px;">✦ Schritt 2 — Szenario wählen</p>
+      <div class="scenario-grid">
+        <button class="scenario-btn active" data-scenario="sp500">
+          <span class="scenario-icon">📈</span>
+          <span class="scenario-name">S&P 500</span>
+          <span class="scenario-rate">ø 10,2%/Jahr</span>
+        </button>
+        <button class="scenario-btn" data-scenario="world-etf">
+          <span class="scenario-icon">🌍</span>
+          <span class="scenario-name">World ETF</span>
+          <span class="scenario-rate">ø 8%/Jahr</span>
+        </button>
+        <button class="scenario-btn" data-scenario="btc">
+          <span class="scenario-icon">₿</span>
+          <span class="scenario-name">Bitcoin</span>
+          <span class="scenario-rate" id="btc-scenario-rate">ø 60%/Jahr*</span>
+        </button>
+        <button class="scenario-btn" data-scenario="savings">
+          <span class="scenario-icon">🏦</span>
+          <span class="scenario-name">Sparkonto</span>
+          <span class="scenario-rate">ø 0,5%/Jahr</span>
+        </button>
       </div>
+      <p class="scenario-disclaimer" id="scenario-disclaimer">* S&P 500 historische Durchschnittsrendite 1957–2024.</p>
 
       <button class="btn-calculate" id="btn-calculate">
         <span class="btn-calc-icon">✦</span>
@@ -127,32 +131,32 @@
       </button>
     </section>
 
-    <!-- ERGEBNIS (versteckt bis Berechnung) -->
+    <!-- ERGEBNIS -->
     <section class="result-section" id="result-section" style="display:none">
 
       <!-- EMOTIONALER HOOK -->
-      <div class="result-hook" id="result-hook">
+      <div class="result-hook">
         <p class="hook-label">Du hättest heute</p>
         <div class="hook-number" id="hook-number">—</div>
         <p class="hook-sub" id="hook-sub">statt nichts.</p>
       </div>
 
-      <!-- VERGLEICHSKARTEN -->
+      <!-- VERGLEICH -->
       <div class="compare-grid">
         <div class="compare-card compare-card--bad">
-          <p class="compare-label">Fiat · Inflation</p>
+          <p class="compare-label">Fiat · Inflation frisst</p>
           <div class="compare-value" id="val-fiat">—</div>
-          <p class="compare-desc">Was dein Geld auf dem Konto heute noch wert wäre</p>
+          <p class="compare-desc">Realer Wert deines Geldes heute</p>
         </div>
         <div class="compare-card compare-card--good">
-          <p class="compare-label" id="invest-label">S&P 500 · Investiert</p>
+          <p class="compare-label" id="invest-label">Investiert</p>
           <div class="compare-value compare-value--bright" id="val-invest">—</div>
-          <p class="compare-desc">Was du heute hättest</p>
+          <p class="compare-desc">Was du stattdessen hättest</p>
         </div>
       </div>
 
       <!-- DETAILS -->
-      <div class="details-grid" id="details-grid">
+      <div class="details-grid">
         <div class="detail-box">
           <span class="detail-num" id="detail-years">0</span>
           <span class="detail-label">Jahre verpasst</span>
@@ -171,32 +175,47 @@
         </div>
       </div>
 
-      <!-- EMOTIONALER TEXT -->
-      <div class="insight-box" id="insight-box">
+      <!-- WOW-METER (ChatGPT Fix: visuelles Feedback) -->
+      <div class="wow-meter-wrap">
+        <div class="wow-meter-header">
+          <span class="wow-meter-title">Performance-Score</span>
+          <span class="wow-meter-label" id="wow-label">—</span>
+        </div>
+        <div class="wow-meter-track">
+          <div class="wow-meter-fill" id="wow-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- INSIGHT -->
+      <div class="insight-box">
         <p class="insight-text" id="insight-text"></p>
       </div>
 
-      <!-- WACHSTUMS-CHART (simpel, kein externes JS) -->
+      <!-- CHART -->
       <div class="chart-section">
         <p class="chart-title">Wachstum über die Zeit</p>
-        <div class="chart-wrap" id="chart-wrap">
+        <div class="chart-legend">
+          <span class="legend-item legend-invest">─ Investiert</span>
+          <span class="legend-item legend-fiat">╌ Fiat/Konto</span>
+        </div>
+        <div class="chart-wrap">
           <canvas id="growth-chart" height="180"></canvas>
         </div>
       </div>
 
       <!-- SHARE -->
       <div class="share-row">
-        <button class="btn-share-result" id="btn-share-result">🔥 Ergebnis teilen</button>
+        <button class="btn-share-result" id="btn-share-result">🔥 Teilen</button>
         <button class="btn-save-image" id="btn-save-image">⬇ Bild speichern</button>
       </div>
 
-      <!-- JETZT STARTEN CTA -->
+      <!-- CTA -->
       <div class="cta-box">
         <p class="cta-label">✦ Jetzt ist der beste Zeitpunkt</p>
-        <p class="cta-headline">Fang heute an — nicht in 10 Jahren.</p>
+        <p class="cta-headline">Fang heute an.</p>
         <p class="cta-sub">Die beste Investition ist die, die du nicht aufgeschoben hast.</p>
         <div class="cta-buttons">
-          <a class="btn-cta-primary" href="https://www.justetf.com/de/" target="_blank" rel="noopener">ETF entdecken →</a>
+          <a class="btn-cta-primary" href="https://www.justetf.com/de/" target="_blank" rel="noopener">ETFs entdecken →</a>
           <a class="btn-cta-secondary" href="https://www.coingecko.com/de" target="_blank" rel="noopener">Crypto erkunden →</a>
         </div>
         <p class="cta-disclaimer">Keine Finanzberatung. Eigenverantwortlich handeln.</p>
@@ -217,7 +236,7 @@
         <span class="footer-sep">·</span>
         <a class="footer-link" href="https://flase-mbrn.github.io/discipline-tracker" target="_blank">Disziplin Tracker</a>
         <span class="footer-sep">·</span>
-        <span class="footer-version">v1.0</span>
+        <span class="footer-version">v1.1</span>
       </div>
     </footer>
 
@@ -228,10 +247,9 @@
     <div class="modal">
       <button class="modal-close" id="share-close">✕</button>
       <p class="modal-eyebrow">✦ Ergebnis teilen</p>
-
-      <div class="share-card-preview" id="share-preview">
+      <div class="share-card-preview">
         <div class="share-preview-inner">
-          <p class="sp-label">WAS WÄRST DU HEUTE WERT?</p>
+          <p class="sp-label">WAS WÄRST DU HEUTE WERT? ✦ MBRN</p>
           <div class="sp-number" id="sp-number">—</div>
           <p class="sp-sub" id="sp-sub">wenn du früher investiert hättest</p>
           <div class="sp-compare">
@@ -244,17 +262,16 @@
               <span class="sp-col-val sp-col-val--bright" id="sp-invest">—</span>
             </div>
           </div>
-          <p class="sp-url">flase-mbrn.github.io/finanz-rechner</p>
+          <p class="sp-url">flase-mbrn.github.io/FinanzRechner</p>
         </div>
       </div>
-
       <div class="social-share-grid">
         <button class="btn-social btn-whatsapp" id="btn-wa">💬 WhatsApp</button>
         <button class="btn-social btn-twitter" id="btn-tw">𝕏 Twitter</button>
         <button class="btn-social btn-copy" id="btn-copy">🔗 Link kopieren</button>
         <button class="btn-social btn-download" id="btn-dl">⬇ Bild laden</button>
       </div>
-      <p class="share-hashtags">#Investieren #Freiheit #MBRN #FinanzielleFreiheit</p>
+      <p class="share-hashtags">#Investieren #FinanzielleFreiheit #MBRN</p>
     </div>
   </div>
 
@@ -263,13 +280,13 @@
     <div class="modal">
       <button class="modal-close" id="privacy-close">✕</button>
       <p class="modal-eyebrow">✦ Rechtliches</p>
-      <h3 class="modal-title">Datenschutz</h3>
+      <h3 class="modal-title">Datenschutz & Impressum</h3>
       <div class="privacy-text">
         <p><strong>Keine Datenspeicherung</strong><br/>Alle Berechnungen erfolgen lokal in deinem Browser. Es werden keine Daten gespeichert oder übermittelt.</p>
-        <p><strong>Externe API</strong><br/>Für Live-Kurse wird die öffentliche CoinGecko-API abgefragt (keine Authentifizierung, keine personenbezogenen Daten).</p>
-        <p><strong>Kein Tracking</strong><br/>Keine Cookies, kein Analytics, kein Remarketing.</p>
-        <p><strong>Keine Finanzberatung</strong><br/>Dieses Tool dient ausschließlich der Veranschaulichung. Es stellt keine Anlageberatung dar.</p>
-        <p class="privacy-small">Stand: 2025 · v1.0 · flase-mbrn.github.io</p>
+        <p><strong>Externe API</strong><br/>Für Live-Kurse wird die öffentliche CoinGecko-API abgefragt. Keine Authentifizierung, keine personenbezogenen Daten.</p>
+        <p><strong>Keine Finanzberatung</strong><br/>Dieses Tool dient ausschließlich der Veranschaulichung mathematischer Zusammenhänge. Es stellt keine Anlageberatung dar. Vergangene Performance ist keine Garantie für zukünftige Ergebnisse.</p>
+        <p><strong>Betreiber</strong><br/>Dieses Projekt wird privat betrieben unter dem Pseudonym Flase / MBRN.<br/>Kontakt: flase-mbrn.github.io</p>
+        <p class="privacy-small">Stand: 2025 · v1.1</p>
       </div>
     </div>
   </div>
