@@ -1,10 +1,9 @@
 // ============================================================
-//  MBRN FINANZ-RECHNER v1.2  –  app.js
-//  Fixes: kein alert() → Toast, Slider-UX, Inflation-Input,
-//         Steuerhinweis, BTC-Disclaimer, Story-Format (9:16),
-//         Button-Loading-State, smooth result animations
+//  MBRN FINANZ-RECHNER v1.3 — Final MVP
+//  Neu: Auto-Neuberechnung (debounced), Jahrestabelle,
+//       Kontext-Vergleich, Reverse-Rechner (Wann bin ich X?),
+//       Animierter Zahlen-Counter, Chart-Milestones
 // ============================================================
-
 'use strict';
 
 const SCENARIOS = {
@@ -13,14 +12,14 @@ const SCENARIOS = {
   'btc':       { name: 'Bitcoin',   rate: 0.60  },
   'savings':   { name: 'Sparkonto', rate: 0.005 },
 };
-
-// Abgeltungssteuer DE inkl. Soli
-const TAX_RATE    = 0.26375;
-const FREIBETRAG  = 1000; // Sparerpauschbetrag 2024
+const TAX_RATE   = 0.26375;
+const FREIBETRAG = 1000;
 
 let activeScenario = 'sp500';
 let lastResult     = null;
 let inflation      = 0.038;
+let debounceTimer  = null;
+let counterTimer   = null;
 
 // ============================================================
 //  INIT
@@ -34,15 +33,15 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ============================================================
-//  TOAST (ersetzt alert())
+//  TOAST
 // ============================================================
 
 function showToast(msg) {
-  var toast = document.getElementById('toast');
-  if (!toast) return;
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(function () { toast.classList.remove('show'); }, 3500);
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 3500);
 }
 
 // ============================================================
@@ -50,15 +49,15 @@ function showToast(msg) {
 // ============================================================
 
 function fetchPrices() {
-  var controller = new AbortController();
-  var timer      = setTimeout(function () { controller.abort(); }, 6000);
+  var ctrl  = new AbortController();
+  var timer = setTimeout(function () { ctrl.abort(); }, 6000);
 
   fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur',
-    { signal: controller.signal })
-    .then(function (res) { clearTimeout(timer); return res.json(); })
-    .then(function (data) {
-      var btc = data && data.bitcoin  && data.bitcoin.eur;
-      var eth = data && data.ethereum && data.ethereum.eur;
+    { signal: ctrl.signal })
+    .then(function (r) { clearTimeout(timer); return r.json(); })
+    .then(function (d) {
+      var btc = d && d.bitcoin  && d.bitcoin.eur;
+      var eth = d && d.ethereum && d.ethereum.eur;
       setText('btc-price', btc ? formatCurrency(btc) : '~84.000 €');
       setText('eth-price', eth ? formatCurrency(eth) : '~2.000 €');
       if (btc) setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
@@ -71,54 +70,55 @@ function fetchPrices() {
 }
 
 // ============================================================
-//  SLIDER INIT — koppelt Range-Slider mit Number-Input
+//  SLIDER INIT
 // ============================================================
 
 function initSliders() {
-  linkSlider('slider-age-now',   'age-now',   'badge-age-now',   function (v) { return v + ' Jahre'; });
-  linkSlider('slider-age-start', 'age-start', 'badge-age-start', function (v) { return v + ' Jahre'; });
-  linkSlider('slider-monthly',   'monthly',   'badge-monthly',   function (v) { return v + ' €'; });
-
-  // Slider-Farbe dynamisch aktualisieren
-  document.querySelectorAll('.slider').forEach(function (sl) {
+  linkSlider('slider-age-now',   'age-now',   'badge-age-now',   function(v){ return v+' Jahre'; });
+  linkSlider('slider-age-start', 'age-start', 'badge-age-start', function(v){ return v+' Jahre'; });
+  linkSlider('slider-monthly',   'monthly',   'badge-monthly',   function(v){ return v+' €'; });
+  document.querySelectorAll('.slider').forEach(function(sl){
     updateSliderFill(sl);
-    sl.addEventListener('input', function () { updateSliderFill(sl); });
+    sl.addEventListener('input', function(){ updateSliderFill(sl); });
   });
 }
 
-function linkSlider(sliderId, inputId, badgeId, formatFn) {
-  var slider = document.getElementById(sliderId);
-  var input  = document.getElementById(inputId);
-  var badge  = document.getElementById(badgeId);
-  if (!slider || !input) return;
-
-  slider.addEventListener('input', function () {
-    input.value = slider.value;
-    if (badge) badge.textContent = formatFn(slider.value);
+function linkSlider(slId, inId, badgeId, fmt) {
+  var sl    = document.getElementById(slId);
+  var input = document.getElementById(inId);
+  var badge = document.getElementById(badgeId);
+  if (!sl || !input) return;
+  sl.addEventListener('input', function(){
+    input.value = sl.value;
+    if (badge) badge.textContent = fmt(sl.value);
     updateYearsHint();
+    scheduleRecalc();
   });
-
-  input.addEventListener('input', function () {
-    slider.value = input.value;
-    if (badge) badge.textContent = formatFn(input.value);
-    updateSliderFill(slider);
+  input.addEventListener('input', function(){
+    sl.value = input.value;
+    if (badge) badge.textContent = fmt(input.value);
+    updateSliderFill(sl);
     updateYearsHint();
+    scheduleRecalc();
   });
-
-  // Initialer Badge-Wert
-  if (badge) badge.textContent = formatFn(input.value);
+  if (badge) badge.textContent = fmt(input.value);
 }
 
 function updateSliderFill(sl) {
-  var min = parseFloat(sl.min) || 0;
-  var max = parseFloat(sl.max) || 100;
-  var val = parseFloat(sl.value) || 0;
-  var pct = ((val - min) / (max - min)) * 100;
-  sl.style.background = 'linear-gradient(90deg, #b388ff ' + pct + '%, rgba(100,80,200,0.2) ' + pct + '%)';
+  var min = parseFloat(sl.min)||0, max = parseFloat(sl.max)||100;
+  var pct = ((parseFloat(sl.value)||0) - min) / (max - min) * 100;
+  sl.style.background = 'linear-gradient(90deg,#b388ff '+pct+'%,rgba(100,70,200,.2) '+pct+'%)';
+}
+
+// Debounced Auto-Neuberechnung (600ms nach letzter Änderung)
+function scheduleRecalc() {
+  if (!lastResult) return; // Nur neuberechnen wenn bereits ein Ergebnis vorhanden
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(calculate, 600);
 }
 
 // ============================================================
-//  KERNBERECHNUNG
+//  BERECHNUNG
 // ============================================================
 
 function calculate() {
@@ -127,60 +127,48 @@ function calculate() {
   var monthly  = parseFloat(getVal('monthly'))     || 0;
   var lump     = parseFloat(getVal('lump'))         || 0;
 
-  // Validierung — Toast statt alert
   hideError('err-age');
+
   if (ageStart >= ageNow) {
     showError('err-age', 'Startalter muss kleiner als aktuelles Alter sein');
     showToast('⚠ Startalter muss kleiner als aktuelles Alter sein');
     return;
   }
-  if (monthly <= 0) {
-    showToast('⚠ Bitte einen monatlichen Betrag eingeben');
-    return;
-  }
+  if (monthly <= 0) { showToast('⚠ Bitte monatlichen Betrag eingeben'); return; }
 
-  var years    = ageNow - ageStart;
-  var rendite  = SCENARIOS[activeScenario].rate;
-  var yearlyIn = monthly * 12;
+  var years   = ageNow - ageStart;
+  var rendite = SCENARIOS[activeScenario].rate;
+  var yearly  = monthly * 12;
 
-  // Button Loading-State
   setCalcLoading(true);
 
-  // Kurze Verzögerung für Animation
   setTimeout(function () {
-    var fiatVal   = lump;
-    var investVal = lump;
+    var fiatVal = lump, investVal = lump;
+    var chartData = [{ year:0, fiat:Math.round(lump), invest:Math.round(lump), total:Math.round(lump) }];
 
     for (var i = 0; i < years; i++) {
-      fiatVal   = (fiatVal   + yearlyIn) * (1 - inflation);
-      investVal = (investVal + yearlyIn) * (1 + rendite);
+      fiatVal   = (fiatVal   + yearly) * (1 - inflation);
+      investVal = (investVal + yearly) * (1 + rendite);
+      var totalIn = lump + yearly * (i + 1);
+      chartData.push({ year:i+1, fiat:Math.round(fiatVal), invest:Math.round(investVal), total:Math.round(totalIn) });
     }
 
-    var totalInvested = lump + yearlyIn * years;
+    var totalInvested = lump + yearly * years;
     var rawGain       = investVal - totalInvested;
-    var taxableGain   = Math.max(0, rawGain - FREIBETRAG);
-    var taxAmount     = taxableGain * TAX_RATE;
-    var afterTax      = investVal - taxAmount;
-
-    var factor = totalInvested > 0 ? investVal / totalInvested : 0;
-
-    var chartData = [];
-    var fv = lump, iv = lump;
-    for (var y = 0; y <= years; y++) {
-      chartData.push({ year: y, fiat: Math.round(fv), invest: Math.round(iv) });
-      fv = (fv + yearlyIn) * (1 - inflation);
-      iv = (iv + yearlyIn) * (1 + rendite);
-    }
+    var taxable       = Math.max(0, rawGain - FREIBETRAG);
+    var afterTax      = investVal - taxable * TAX_RATE;
+    var factor        = totalInvested > 0 ? investVal / totalInvested : 0;
 
     lastResult = {
-      fiatVal: fiatVal, investVal: investVal, afterTax: afterTax,
-      totalInvested: totalInvested, gain: rawGain, factor: factor,
-      years: years, monthly: monthly, lump: lump, chartData: chartData,
+      fiatVal:fiatVal, investVal:investVal, afterTax:afterTax,
+      totalInvested:totalInvested, gain:rawGain, factor:factor,
+      years:years, monthly:monthly, lump:lump, chartData:chartData,
+      ageNow:ageNow, ageStart:ageStart, rendite:rendite,
     };
 
     setCalcLoading(false);
     showResult(lastResult);
-  }, 180);
+  }, 160);
 }
 
 // ============================================================
@@ -190,96 +178,213 @@ function calculate() {
 function showResult(r) {
   var section = document.getElementById('result-section');
   if (!section) return;
-  section.style.display   = 'flex';
-  section.style.animation = 'none';
-  void section.offsetWidth;
-  section.style.animation = '';
+  section.style.display = 'flex';
 
-  setText('hook-number', formatCurrency(r.investVal));
+  // Hero mit animiertem Counter
+  animateCounter('hook-number', r.investVal);
   setText('hook-sub',
     r.investVal > r.fiatVal
       ? 'statt ' + formatCurrency(r.fiatVal) + ' auf dem Konto.'
-      : 'Mehr Zeit = mehr Wachstum.');
+      : 'Früher starten = mehr Wachstum.');
 
-  // Steuerhinweis (nur wenn sinnvoller Gewinn)
+  // Steuer-Hint
   var taxHint = document.getElementById('tax-hint');
-  var taxAfter = document.getElementById('tax-after');
-  if (taxHint && taxAfter && r.gain > FREIBETRAG) {
-    taxHint.style.display = 'flex';
-    taxAfter.textContent  = formatCurrency(r.afterTax) + ' (ca.)';
-  } else if (taxHint) {
-    taxHint.style.display = 'none';
+  if (taxHint) {
+    taxHint.style.display = r.gain > FREIBETRAG ? 'inline-flex' : 'none';
+    if (r.gain > FREIBETRAG) setText('tax-after', formatCurrency(r.afterTax) + ' (ca.)');
   }
 
+  // Kontext-Vergleich (neues Feature)
+  renderContextBox(r.investVal);
+
+  // Vergleich
   setText('val-fiat',    formatCurrency(r.fiatVal));
   setText('val-invest',  formatCurrency(r.investVal));
   setText('invest-label', SCENARIOS[activeScenario].name + ' · Investiert');
+
+  // Details
   setText('detail-years',    r.years);
   setText('detail-invested', formatCurrencyShort(r.totalInvested));
   setText('detail-gain',     formatCurrencyShort(Math.max(0, r.gain)));
   setText('detail-factor',   r.factor.toFixed(1) + 'x');
 
-  updateWowMeter(r);
+  // Wow-Meter
+  var pct    = Math.min(100, Math.round(((r.factor - 1) / 19) * 100));
+  var labels = ['Besser als nichts','Solide','Gut','Sehr gut','Exzellent','Außergewöhnlich'];
+  var fill   = document.getElementById('wow-fill');
+  if (fill) fill.style.width = pct + '%';
+  setText('wow-label', labels[Math.min(labels.length-1, Math.floor(pct/17))] + ' ('+pct+'%)');
+
+  // Insight
   setText('insight-text', buildInsight(r));
 
-  // Share Preview
-  setText('sp-number',   formatCurrency(r.investVal));
-  setText('sp-fiat',     formatCurrencyShort(r.fiatVal));
-  setText('sp-invest',   formatCurrencyShort(r.investVal));
-  setText('sp-inv-label', SCENARIOS[activeScenario].name);
-  setText('sp-sub',      'wenn du vor ' + r.years + ' Jahren angefangen hättest');
+  // Chart
+  drawChart(r.chartData, r.investVal);
 
-  drawChart(r.chartData);
+  // Jahrestabelle (befüllen, nicht öffnen)
+  fillYearTable(r);
+
+  // Share Preview
+  setText('sp-number',    formatCurrency(r.investVal));
+  setText('sp-fiat',      formatCurrencyShort(r.fiatVal));
+  setText('sp-invest',    formatCurrencyShort(r.investVal));
+  setText('sp-inv-label', SCENARIOS[activeScenario].name);
+  setText('sp-sub',       'wenn du vor '+r.years+' Jahren angefangen hättest');
 
   setTimeout(function () {
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 120);
+    section.scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 130);
 }
 
 // ============================================================
-//  WOW-METER
+//  ANIMIERTER COUNTER
 // ============================================================
 
-function updateWowMeter(r) {
-  var fill  = document.getElementById('wow-fill');
-  var label = document.getElementById('wow-label');
-  if (!fill || !label) return;
-  var pct    = Math.min(100, Math.round(((r.factor - 1) / 19) * 100));
-  fill.style.width   = pct + '%';
-  var labels = ['Besser als nichts', 'Solide', 'Gut', 'Sehr gut', 'Exzellent', 'Außergewöhnlich'];
-  label.textContent  = labels[Math.min(labels.length - 1, Math.floor(pct / 17))] + ' (' + pct + '%)';
+function animateCounter(id, targetVal) {
+  var el = document.getElementById(id);
+  if (!el) return;
+
+  el.classList.remove('animating');
+  void el.offsetWidth;
+  el.classList.add('animating');
+
+  if (counterTimer) clearInterval(counterTimer);
+  var start     = 0;
+  var duration  = 800;
+  var startTime = null;
+
+  counterTimer = requestAnimationFrame(function step(ts) {
+    if (!startTime) startTime = ts;
+    var progress = Math.min((ts - startTime) / duration, 1);
+    var eased    = 1 - Math.pow(1 - progress, 3); // ease-out-cubic
+    var current  = Math.round(eased * targetVal);
+    el.textContent = formatCurrency(current);
+    if (progress < 1) counterTimer = requestAnimationFrame(step);
+    else el.textContent = formatCurrency(targetVal);
+  });
 }
 
 // ============================================================
-//  INSIGHT
+//  KONTEXT-VERGLEICH (neues Feature)
 // ============================================================
 
-function buildInsight(r) {
-  var s    = SCENARIOS[activeScenario].name;
-  var diff = formatCurrency(r.investVal - r.fiatVal);
-  var isBtc = activeScenario === 'btc';
-  var base;
+function renderContextBox(val) {
+  var box  = document.getElementById('context-box');
+  var grid = document.getElementById('context-grid');
+  if (!box || !grid) return;
 
-  if (r.factor >= 10) {
-    base = 'Mit ' + s + ' hättest du dein Kapital ver' + r.factor.toFixed(0) + 'facht — ' + diff + ' mehr als auf dem Konto. Das ist kein Glück, das ist Zinseszins.';
-  } else if (r.factor >= 3) {
-    base = diff + ' trennen die Entscheidung zu investieren von der Entscheidung es nicht zu tun. ' + r.years + ' Jahre, ' + formatCurrencyShort(r.monthly) + ' monatlich.';
+  var avgSalaryDE = 45000; // Brutto Durchschnittsgehalt DE
+  var avgRentDE   = 12000; // 1.000 €/Monat Miete × 12
+  var carAvg      = 35000; // Durchschnittlicher Neuwagen
+
+  var items = [
+    { emoji:'💰', label:'Jahresgehälter (DE)', val: Math.round(val / avgSalaryDE * 10) / 10 },
+    { emoji:'🏠', label:'Jahre Miete (ø DE)',  val: Math.round(val / avgRentDE * 10) / 10 },
+    { emoji:'🚗', label:'Durchschnittliche Neuwagen', val: Math.round(val / carAvg) },
+    { emoji:'✈️', label:'Weltreisen (ca. 5.000€)', val: Math.round(val / 5000) },
+  ];
+
+  grid.innerHTML = items.map(function(item) {
+    return '<div class="context-item">' +
+      '<span class="context-emoji">'+item.emoji+'</span>' +
+      '<div class="context-text">' +
+        '<strong>' + formatNum(item.val) + (item.val % 1 !== 0 ? '' : '') + '</strong>' +
+        item.label +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function formatNum(n) {
+  if (n >= 1000) return Math.round(n).toLocaleString('de-DE') + ' ×';
+  if (n % 1 === 0) return n + ' ×';
+  return n.toFixed(1) + ' ×';
+}
+
+// ============================================================
+//  JAHRESTABELLE (neues Feature)
+// ============================================================
+
+function fillYearTable(r) {
+  var tbody = document.getElementById('year-table-body');
+  if (!tbody) return;
+
+  var ageStart    = r.ageStart;
+  var milestones  = [100000, 250000, 500000, 1000000, 5000000];
+  var passedMiles = {};
+
+  tbody.innerHTML = r.chartData.map(function(d) {
+    var gain       = d.invest - d.total;
+    var isMile     = false;
+
+    milestones.forEach(function(m) {
+      if (d.invest >= m && !passedMiles[m]) {
+        passedMiles[m] = true; isMile = true;
+      }
+    });
+
+    return '<tr class="'+(isMile?'milestone-row':'')+'">' +
+      '<td>'+d.year+'</td>' +
+      '<td>'+(ageStart+d.year)+'</td>' +
+      '<td>'+formatCurrencyShort(d.total)+'</td>' +
+      '<td class="col-invest">'+formatCurrencyShort(d.invest)+'</td>' +
+      '<td>'+formatCurrencyShort(d.fiat)+'</td>' +
+      '<td class="col-gain">'+(gain>0?'+':'')+formatCurrencyShort(gain)+'</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ============================================================
+//  REVERSE-RECHNER: Wann bin ich Millionär?
+// ============================================================
+
+function calculateReverse() {
+  if (!lastResult) { showToast('⚠ Bitte zuerst berechnen'); return; }
+
+  var targetEl = document.getElementById('target-amount');
+  var target   = parseFloat(targetEl ? targetEl.value : 0) || 1000000;
+  var r        = lastResult;
+  var rendite  = r.rendite;
+  var monthly  = r.monthly;
+  var lump     = r.lump;
+  var yearly   = monthly * 12;
+
+  var val      = lump;
+  var years    = 0;
+  var maxYears = 200;
+
+  while (val < target && years < maxYears) {
+    val = (val + yearly) * (1 + rendite);
+    years++;
+  }
+
+  var resultEl = document.getElementById('reverse-result');
+  var textEl   = document.getElementById('reverse-result-text');
+  if (!resultEl || !textEl) return;
+  resultEl.style.display = 'block';
+
+  if (years >= maxYears) {
+    textEl.innerHTML = 'Mit diesem Szenario und ' + formatCurrencyShort(monthly) + '/Monat ist das Ziel von ' + formatCurrency(target) + ' rechnerisch nicht erreichbar. Erhöhe den monatlichen Betrag oder wähle ein renditereicheres Szenario.';
   } else {
-    base = 'Selbst ' + s + ' schlägt Inflation in ' + r.years + ' Jahren deutlich — ' + diff + ' Unterschied bei nur ' + formatCurrencyShort(r.monthly) + '/Monat.';
-  }
+    var reachAge = r.ageStart + years;
+    var now      = r.ageNow;
+    var fromNow  = r.years + years - r.years; // Jahre ab heutigem Stand
+    // Tatsächliche Jahre ab jetzt bis Ziel
+    var futureYears = years - r.years;
 
-  if (isBtc) {
-    base += ' ⚠ Bitcoin: historische Rendite von ø 60%/Jahr. Bei wachsender Marktkapitalisierung sind solche Renditen zukünftig unwahrscheinlich — realistisch einordnen.';
+    if (futureYears <= 0) {
+      textEl.innerHTML = '✦ Du hättest das Ziel von <strong>' + formatCurrency(target) + '</strong> bereits nach <strong>' + years + ' Jahren</strong> (mit ' + reachAge + ') erreicht — wenn du damals gestartet wärst.';
+    } else {
+      textEl.innerHTML = '✦ Du erreichst <strong>' + formatCurrency(target) + '</strong> in weiteren <strong>' + futureYears + ' Jahren</strong> (mit ' + (now + futureYears) + ') — wenn du <strong>jetzt</strong> mit ' + formatCurrencyShort(monthly) + '/Monat startest.';
+    }
   }
-
-  return base;
 }
 
 // ============================================================
-//  CHART
+//  CHART (mit Milestone-Linien)
 // ============================================================
 
-function drawChart(data) {
+function drawChart(data, maxInvest) {
   var canvas = document.getElementById('growth-chart');
   if (!canvas || !canvas.getContext) return;
   var ctx  = canvas.getContext('2d');
@@ -293,247 +398,227 @@ function drawChart(data) {
   canvas.style.height = h + 'px';
   ctx.scale(dpr, dpr);
 
-  var pL = 16, pR = 20, pT = 20, pB = 28;
-  var cW = w - pL - pR;
-  var cH = h - pT - pB;
-  var maxVal = Math.max.apply(null, data.map(function (d) { return d.invest; })) || 1;
+  var pL=18, pR=22, pT=18, pB=26;
+  var cW=w-pL-pR, cH=h-pT-pB;
+  var maxV = Math.max.apply(null, data.map(function(d){return d.invest;})) || 1;
 
-  function xP(i)   { return pL + (i / Math.max(data.length - 1, 1)) * cW; }
-  function yP(val) { return pT + cH - (val / maxVal) * cH; }
+  function xP(i)   { return pL + (i/Math.max(data.length-1,1))*cW; }
+  function yP(v)   { return pT + cH - (v/maxV)*cH; }
 
-  // Grid
-  ctx.strokeStyle = 'rgba(100,80,200,0.08)'; ctx.lineWidth = 1;
-  for (var g = 0; g <= 4; g++) {
-    var gy = pT + (cH / 4) * g;
-    ctx.beginPath(); ctx.moveTo(pL, gy); ctx.lineTo(pL + cW, gy); ctx.stroke();
+  // Grid-Linien
+  ctx.strokeStyle='rgba(100,70,200,.07)'; ctx.lineWidth=1;
+  for(var g=0;g<=4;g++){
+    var gy=pT+(cH/4)*g;
+    ctx.beginPath();ctx.moveTo(pL,gy);ctx.lineTo(pL+cW,gy);ctx.stroke();
   }
 
-  // Fiat
-  ctx.beginPath();
-  data.forEach(function (d, i) {
-    if (i === 0) ctx.moveTo(xP(i), yP(d.fiat));
-    else         ctx.lineTo(xP(i), yP(d.fiat));
+  // Milestone-Linien (100k, 500k, 1M, etc.)
+  var milestones=[100000,500000,1000000,5000000];
+  milestones.forEach(function(m){
+    if(m>maxV*1.1) return;
+    var my=yP(m);
+    ctx.strokeStyle='rgba(179,136,255,.12)';ctx.lineWidth=1;
+    ctx.setLineDash([3,5]);
+    ctx.beginPath();ctx.moveTo(pL,my);ctx.lineTo(pL+cW,my);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(179,136,255,.4)';ctx.font='8px Space Mono,monospace';
+    ctx.textAlign='right';ctx.textBaseline='bottom';
+    ctx.fillText(formatCurrencyShort(m),pL+cW,my-2);
   });
-  ctx.setLineDash([4, 4]);
-  ctx.strokeStyle = 'rgba(255,107,107,0.55)'; ctx.lineWidth = 1.5;
-  ctx.stroke(); ctx.setLineDash([]);
+
+  // Fiat (gestrichelt)
+  ctx.beginPath();
+  data.forEach(function(d,i){
+    if(i===0)ctx.moveTo(xP(i),yP(d.fiat));else ctx.lineTo(xP(i),yP(d.fiat));
+  });
+  ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(255,107,107,.52)';ctx.lineWidth=1.5;
+  ctx.stroke();ctx.setLineDash([]);
 
   // Invest-Fläche
-  var grad = ctx.createLinearGradient(0, pT, 0, pT + cH);
-  grad.addColorStop(0, 'rgba(179,136,255,0.28)');
-  grad.addColorStop(1, 'rgba(179,136,255,0.02)');
+  var gr=ctx.createLinearGradient(0,pT,0,pT+cH);
+  gr.addColorStop(0,'rgba(179,136,255,.26)');gr.addColorStop(1,'rgba(179,136,255,.02)');
   ctx.beginPath();
-  data.forEach(function (d, i) {
-    if (i === 0) ctx.moveTo(xP(i), yP(d.invest));
-    else         ctx.lineTo(xP(i), yP(d.invest));
+  data.forEach(function(d,i){
+    if(i===0)ctx.moveTo(xP(i),yP(d.invest));else ctx.lineTo(xP(i),yP(d.invest));
   });
-  ctx.lineTo(xP(data.length - 1), pT + cH);
-  ctx.lineTo(xP(0), pT + cH);
-  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  ctx.lineTo(xP(data.length-1),pT+cH);ctx.lineTo(xP(0),pT+cH);ctx.closePath();
+  ctx.fillStyle=gr;ctx.fill();
 
   // Invest-Linie
   ctx.beginPath();
-  data.forEach(function (d, i) {
-    if (i === 0) ctx.moveTo(xP(i), yP(d.invest));
-    else         ctx.lineTo(xP(i), yP(d.invest));
+  data.forEach(function(d,i){
+    if(i===0)ctx.moveTo(xP(i),yP(d.invest));else ctx.lineTo(xP(i),yP(d.invest));
   });
-  ctx.strokeStyle = 'rgba(179,136,255,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle='rgba(179,136,255,.9)';ctx.lineWidth=2;ctx.stroke();
 
-  // Endwert
-  if (data.length > 1) {
-    var last = data[data.length - 1];
-    ctx.fillStyle = 'rgba(179,136,255,0.8)'; ctx.font = '700 10px Space Mono, monospace';
-    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
-    ctx.fillText(formatCurrencyShort(last.invest), pL + cW, yP(last.invest) - 4);
+  // Endwert Label
+  if(data.length>1){
+    var last=data[data.length-1];
+    ctx.fillStyle='rgba(179,136,255,.85)';ctx.font='700 9px Space Mono,monospace';
+    ctx.textAlign='right';ctx.textBaseline='bottom';
+    ctx.fillText(formatCurrencyShort(last.invest),pL+cW,yP(last.invest)-4);
   }
 
   // X-Labels
-  ctx.fillStyle = 'rgba(232,232,240,0.3)'; ctx.font = '9px Space Mono, monospace';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-  [0, Math.floor((data.length - 1) / 2), data.length - 1].forEach(function (i) {
-    ctx.fillText('Jahr ' + data[i].year, xP(i), h - 4);
+  ctx.fillStyle='rgba(234,234,244,.28)';ctx.font='8px Space Mono,monospace';
+  ctx.textAlign='center';ctx.textBaseline='bottom';
+  [0,Math.floor((data.length-1)/2),data.length-1].forEach(function(i){
+    ctx.fillText('Jahr '+data[i].year,xP(i),h-3);
   });
 }
 
 // ============================================================
-//  SHARE IMAGE — POST (1:1) und STORY (9:16)
+//  INSIGHT TEXT
 // ============================================================
 
-function generateShareImage(format) {
-  if (!lastResult) { showToast('⚠ Bitte zuerst berechnen'); return; }
-  var r    = lastResult;
-  var isStory = format === 'story';
-  var W    = 1080;
-  var H    = isStory ? 1920 : 1080;
-  var c    = document.createElement('canvas');
-  c.width  = W; c.height = H;
-  var ctx  = c.getContext('2d');
+function buildInsight(r) {
+  var s    = SCENARIOS[activeScenario].name;
+  var diff = formatCurrency(r.investVal - r.fiatVal);
+  var base;
 
-  // BG
-  ctx.fillStyle = '#030014'; ctx.fillRect(0, 0, W, H);
-  var g1 = ctx.createRadialGradient(W, 0, 0, W, 0, 600);
-  g1.addColorStop(0, 'rgba(157,80,187,0.35)'); g1.addColorStop(1, 'transparent');
-  ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
-  var g2 = ctx.createRadialGradient(0, H, 0, 0, H, 500);
-  g2.addColorStop(0, 'rgba(56,189,248,0.15)'); g2.addColorStop(1, 'transparent');
-  ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
-
-  // Accent-Rand
-  ctx.fillStyle = '#b388ff';
-  ctx.fillRect(0, 0, W, 6);
-  ctx.fillRect(0, H - 6, W, 6);
-
-  if (isStory) {
-    drawStoryCard(ctx, r, W, H);
-  } else {
-    drawPostCard(ctx, r, W, H);
+  if(r.factor>=10){
+    base='Mit '+s+' hättest du dein Kapital ver'+r.factor.toFixed(0)+'facht — '+diff+' mehr als auf dem Konto. Das ist kein Zufall, das ist Zinseszins über Zeit.';
+  }else if(r.factor>=3){
+    base=diff+' trennen die Entscheidung zu investieren von der Entscheidung es nicht zu tun. '+r.years+' Jahre, '+formatCurrencyShort(r.monthly)+'/Monat.';
+  }else{
+    base='Selbst '+s+' schlägt Inflation in '+r.years+' Jahren deutlich — '+diff+' Unterschied bei nur '+formatCurrencyShort(r.monthly)+'/Monat.';
   }
 
-  var link    = document.createElement('a');
-  link.download = isStory ? 'mbrn-finanz-story.png' : 'mbrn-finanz-post.png';
-  link.href   = c.toDataURL('image/png');
-  link.click();
+  if(activeScenario==='btc'){
+    base+=' ⚠ Bitcoin: historische ø-Rendite 60%/Jahr. Zukünftig deutlich moderater wahrscheinlich — nur mit Geld investieren, dessen Verlust du verkraften könntest.';
+  }
+  return base;
 }
 
-function drawPostCard(ctx, r, W, H) {
-  ctx.fillStyle = 'rgba(179,136,255,0.55)'; ctx.font = '500 24px monospace';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText('WAS WÄRST DU HEUTE WERT? ✦ MBRN', W / 2, 68);
+// ============================================================
+//  SHARE IMAGE
+// ============================================================
 
-  var numText = formatCurrency(r.investVal);
-  var fs = 180;
-  ctx.font = 'bold ' + fs + 'px sans-serif';
-  while (ctx.measureText(numText).width > W * 0.82 && fs > 60) { fs -= 8; ctx.font = 'bold ' + fs + 'px sans-serif'; }
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(179,136,255,0.3)'; ctx.shadowBlur = 40;
-  var tg = ctx.createLinearGradient(200, 0, W - 200, 0);
-  tg.addColorStop(0, '#ffffff'); tg.addColorStop(1, '#b388ff');
-  ctx.fillStyle = tg; ctx.fillText(numText, W / 2, 330); ctx.shadowBlur = 0;
+function generateShareImage(fmt) {
+  if(!lastResult){showToast('⚠ Bitte zuerst berechnen');return;}
+  var r=lastResult,isStory=fmt==='story';
+  var W=1080,H=isStory?1920:1080;
+  var c=document.createElement('canvas');
+  c.width=W;c.height=H;
+  var ctx=c.getContext('2d');
 
-  ctx.fillStyle = 'rgba(232,232,240,0.4)'; ctx.font = '400 26px monospace';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('wenn du vor ' + r.years + ' Jahren angefangen hättest', W / 2, 430);
+  // BG
+  ctx.fillStyle='#030014';ctx.fillRect(0,0,W,H);
+  var g1=ctx.createRadialGradient(W,0,0,W,0,600);
+  g1.addColorStop(0,'rgba(157,80,187,.35)');g1.addColorStop(1,'transparent');
+  ctx.fillStyle=g1;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#b388ff';ctx.fillRect(0,0,W,6);ctx.fillRect(0,H-6,W,6);
 
-  drawCompareBoxes(ctx, r, W, 480, 420, 130, 36);
-  drawStatsRow(ctx, r, W, 656);
-  drawInsightBox(ctx, r, W, 760, 116);
+  if(isStory) drawStoryCard(ctx,r,W,H);
+  else        drawPostCard(ctx,r,W,H);
 
-  ctx.fillStyle = 'rgba(179,136,255,0.4)'; ctx.font = '400 18px monospace';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText('✦  flase-mbrn.github.io/FinanzRechner  ✦', W / 2, H - 22);
+  var a=document.createElement('a');
+  a.download=isStory?'mbrn-finanz-story.png':'mbrn-finanz-post.png';
+  a.href=c.toDataURL('image/png');a.click();
 }
 
-function drawStoryCard(ctx, r, W, H) {
-  var cx = W / 2;
-  // Top label
-  ctx.fillStyle = 'rgba(179,136,255,0.6)'; ctx.font = '500 26px monospace';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText('✦ MBRN · FINANZ-RECHNER ✦', cx, 100);
+function drawPostCard(ctx,r,W,H){
+  var cx=W/2;
+  ctx.fillStyle='rgba(179,136,255,.55)';ctx.font='500 24px monospace';
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillText('WAS WÄRST DU HEUTE WERT? ✦ MBRN',cx,68);
 
-  // Frage
-  ctx.fillStyle = 'rgba(232,232,240,0.8)'; ctx.font = 'bold 48px sans-serif';
-  ctx.fillText('Was wärst du heute', cx, 200);
-  ctx.fillText('wert?', cx, 265);
+  var nTxt=formatCurrency(r.investVal),fs=180;
+  ctx.font='bold '+fs+'px sans-serif';
+  while(ctx.measureText(nTxt).width>W*.82&&fs>60){fs-=8;ctx.font='bold '+fs+'px sans-serif';}
+  ctx.textBaseline='middle';ctx.shadowColor='rgba(179,136,255,.3)';ctx.shadowBlur=40;
+  var tg=ctx.createLinearGradient(200,0,W-200,0);
+  tg.addColorStop(0,'#fff');tg.addColorStop(1,'#b388ff');
+  ctx.fillStyle=tg;ctx.fillText(nTxt,cx,330);ctx.shadowBlur=0;
 
-  // Hauptzahl
-  var numText = formatCurrency(r.investVal);
-  var fs = 140;
-  ctx.font = 'bold ' + fs + 'px sans-serif';
-  while (ctx.measureText(numText).width > W * 0.85 && fs > 60) { fs -= 8; ctx.font = 'bold ' + fs + 'px sans-serif'; }
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(179,136,255,0.4)'; ctx.shadowBlur = 50;
-  var tg = ctx.createLinearGradient(100, 0, W - 100, 0);
-  tg.addColorStop(0, '#fff'); tg.addColorStop(1, '#b388ff');
-  ctx.fillStyle = tg; ctx.fillText(numText, cx, 430); ctx.shadowBlur = 0;
+  ctx.fillStyle='rgba(234,234,244,.4)';ctx.font='400 26px monospace';ctx.textBaseline='alphabetic';
+  ctx.fillText('wenn du vor '+r.years+' Jahren angefangen hättest',cx,430);
 
-  ctx.fillStyle = 'rgba(232,232,240,0.5)'; ctx.font = '400 28px monospace';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('bei ' + r.years + ' Jahren ' + SCENARIOS[activeScenario].name, cx, 530);
-
-  drawCompareBoxes(ctx, r, W, 600, 380, 160, 44);
-  drawStatsRow(ctx, r, W, 820);
-
-  // Disclaimer
-  ctx.fillStyle = 'rgba(232,232,240,0.25)'; ctx.font = '400 20px monospace';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText('Keine Finanzberatung · Historische Werte', cx, 1040);
-
-  // CTA Box
-  ctx.fillStyle = 'rgba(179,136,255,0.12)'; ctx.strokeStyle = 'rgba(179,136,255,0.3)';
-  ctx.lineWidth = 1;
-  roundRect(ctx, 80, 1080, W - 160, 160, 18, true, true);
-  ctx.fillStyle = '#b388ff'; ctx.font = 'bold 28px sans-serif'; ctx.textBaseline = 'middle';
-  ctx.fillText('Berechne dein Ergebnis:', cx, 1140);
-  ctx.fillStyle = 'rgba(232,232,240,0.7)'; ctx.font = '400 22px monospace';
-  ctx.fillText('flase-mbrn.github.io/FinanzRechner', cx, 1190);
-
-  // Insight unten
-  drawInsightBox(ctx, r, W, 1300, 200);
-
-  // Footer
-  ctx.fillStyle = 'rgba(179,136,255,0.4)'; ctx.font = '400 22px monospace';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('✦  flase-mbrn.github.io  ✦', cx, H - 22);
+  var bW=420,bH=130,gap=36,bY=480;
+  var b1x=cx-bW-gap/2,b2x=cx+gap/2;
+  drawBox(ctx,'rgba(255,107,107,.1)','rgba(255,107,107,.35)',b1x,bY,bW,bH,'FIAT · INFLATION','#ff6b6b',formatCurrencyShort(r.fiatVal),36);
+  drawBox(ctx,'rgba(79,255,176,.1)','rgba(79,255,176,.35)',b2x,bY,bW,bH,SCENARIOS[activeScenario].name.toUpperCase(),'#4fffb0',formatCurrencyShort(r.investVal),36);
+  drawStats(ctx,r,W,656);
+  drawInsBox(ctx,r,W,760,116);
+  ctx.fillStyle='rgba(179,136,255,.4)';ctx.font='400 18px monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillText('✦  flase-mbrn.github.io/FinanzRechner  ✦',cx,H-22);
 }
 
-function drawCompareBoxes(ctx, r, W, y, bW, bH, fontSize) {
-  var gap = 36, b1x = W / 2 - bW - gap / 2, b2x = W / 2 + gap / 2;
-  ctx.fillStyle = 'rgba(255,107,107,0.1)'; ctx.strokeStyle = 'rgba(255,107,107,0.35)'; ctx.lineWidth = 1;
-  roundRect(ctx, b1x, y, bW, bH, 12, true, true);
-  ctx.fillStyle = 'rgba(232,232,240,0.35)'; ctx.font = '400 17px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText('FIAT · INFLATION', b1x + bW / 2, y + 30);
-  ctx.fillStyle = '#ff6b6b'; ctx.font = 'bold ' + fontSize + 'px sans-serif'; ctx.textBaseline = 'middle';
-  ctx.fillText(formatCurrencyShort(r.fiatVal), b1x + bW / 2, y + bH * 0.65);
+function drawStoryCard(ctx,r,W,H){
+  var cx=W/2;
+  ctx.fillStyle='rgba(179,136,255,.6)';ctx.font='500 26px monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillText('✦ MBRN · FINANZ-RECHNER ✦',cx,100);
+  ctx.fillStyle='rgba(234,234,244,.85)';ctx.font='bold 50px sans-serif';
+  ctx.fillText('Was wärst du heute',cx,200);ctx.fillText('wert?',cx,265);
 
-  ctx.fillStyle = 'rgba(79,255,176,0.1)'; ctx.strokeStyle = 'rgba(79,255,176,0.35)';
-  roundRect(ctx, b2x, y, bW, bH, 12, true, true);
-  ctx.fillStyle = 'rgba(232,232,240,0.35)'; ctx.font = '400 17px monospace'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText(SCENARIOS[activeScenario].name.toUpperCase(), b2x + bW / 2, y + 30);
-  ctx.fillStyle = '#4fffb0'; ctx.font = 'bold ' + fontSize + 'px sans-serif'; ctx.textBaseline = 'middle';
-  ctx.fillText(formatCurrencyShort(r.investVal), b2x + bW / 2, y + bH * 0.65);
+  var nTxt=formatCurrency(r.investVal),fs=140;
+  ctx.font='bold '+fs+'px sans-serif';
+  while(ctx.measureText(nTxt).width>W*.85&&fs>60){fs-=8;ctx.font='bold '+fs+'px sans-serif';}
+  ctx.textBaseline='middle';ctx.shadowColor='rgba(179,136,255,.4)';ctx.shadowBlur=50;
+  var tg=ctx.createLinearGradient(100,0,W-100,0);tg.addColorStop(0,'#fff');tg.addColorStop(1,'#b388ff');
+  ctx.fillStyle=tg;ctx.fillText(nTxt,cx,430);ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(234,234,244,.5)';ctx.font='400 28px monospace';ctx.textBaseline='alphabetic';
+  ctx.fillText('bei '+r.years+' Jahren '+SCENARIOS[activeScenario].name,cx,530);
+
+  var bW=380,bH=155,gap=36,bY=598;
+  drawBox(ctx,'rgba(255,107,107,.1)','rgba(255,107,107,.35)',cx-bW-gap/2,bY,bW,bH,'FIAT · INFLATION','#ff6b6b',formatCurrencyShort(r.fiatVal),42);
+  drawBox(ctx,'rgba(79,255,176,.1)','rgba(79,255,176,.35)',cx+gap/2,bY,bW,bH,SCENARIOS[activeScenario].name.toUpperCase(),'#4fffb0',formatCurrencyShort(r.investVal),42);
+  drawStats(ctx,r,W,822);
+
+  ctx.fillStyle='rgba(179,136,255,.12)';ctx.strokeStyle='rgba(179,136,255,.3)';ctx.lineWidth=1;
+  roundRect(ctx,80,1080,W-160,165,18,true,true);
+  ctx.fillStyle='#b388ff';ctx.font='bold 28px sans-serif';ctx.textBaseline='middle';ctx.textAlign='center';
+  ctx.fillText('Berechne dein Ergebnis:',cx,1142);
+  ctx.fillStyle='rgba(234,234,244,.7)';ctx.font='400 22px monospace';
+  ctx.fillText('flase-mbrn.github.io/FinanzRechner',cx,1196);
+
+  drawInsBox(ctx,r,W,1310,200);
+  ctx.fillStyle='rgba(179,136,255,.4)';ctx.font='400 22px monospace';ctx.textBaseline='alphabetic';
+  ctx.fillText('✦  flase-mbrn.github.io  ✦',cx,H-22);
 }
 
-function drawStatsRow(ctx, r, W, y) {
-  var stats = [
-    { l: 'JAHRE', v: r.years },
-    { l: 'EINGEZAHLT', v: formatCurrencyShort(r.totalInvested) },
-    { l: 'GEWINN', v: formatCurrencyShort(Math.max(0, r.gain)) },
-    { l: 'FAKTOR', v: r.factor.toFixed(1) + 'x' },
-  ];
-  var sw = (W - 120) / 4;
-  stats.forEach(function (s, i) {
-    var sx = 60 + i * sw;
-    ctx.fillStyle = 'rgba(232,232,240,0.25)'; ctx.font = '400 15px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(s.l, sx + sw / 2, y + 22);
-    ctx.fillStyle = '#b388ff'; ctx.font = 'bold 28px sans-serif'; ctx.textBaseline = 'middle';
-    ctx.fillText(s.v, sx + sw / 2, y + 60);
+function drawBox(ctx,fill,stroke,x,y,w,h,label,valColor,valText,fs){
+  ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=1;
+  roundRect(ctx,x,y,w,h,12,true,true);
+  ctx.fillStyle='rgba(234,234,244,.35)';ctx.font='400 17px monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillText(label,x+w/2,y+30);
+  ctx.fillStyle=valColor;ctx.font='bold '+fs+'px sans-serif';ctx.textBaseline='middle';
+  ctx.fillText(valText,x+w/2,y+h*.65);
+}
+
+function drawStats(ctx,r,W,y){
+  var stats=[{l:'JAHRE',v:r.years},{l:'EINGEZAHLT',v:formatCurrencyShort(r.totalInvested)},{l:'GEWINN',v:formatCurrencyShort(Math.max(0,r.gain))},{l:'FAKTOR',v:r.factor.toFixed(1)+'x'}];
+  var sw=(W-120)/4;
+  stats.forEach(function(s,i){
+    var sx=60+i*sw;
+    ctx.fillStyle='rgba(234,234,244,.25)';ctx.font='400 15px monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    ctx.fillText(s.l,sx+sw/2,y+22);
+    ctx.fillStyle='#b388ff';ctx.font='bold 28px sans-serif';ctx.textBaseline='middle';
+    ctx.fillText(s.v,sx+sw/2,y+62);
   });
 }
 
-function drawInsightBox(ctx, r, W, y, boxH) {
-  ctx.fillStyle = 'rgba(179,136,255,0.1)'; ctx.strokeStyle = 'rgba(179,136,255,0.2)'; ctx.lineWidth = 1;
-  roundRect(ctx, 60, y, W - 120, boxH, 12, true, true);
-  ctx.fillStyle = 'rgba(232,232,240,0.5)'; ctx.font = '400 19px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  var insight = buildInsight(r);
-  // Truncate for canvas
-  if (insight.length > 180) insight = insight.substring(0, 177) + '…';
-  wrapText(ctx, insight, W / 2, y + boxH / 2 - 18, W - 160, 32);
+function drawInsBox(ctx,r,W,y,boxH){
+  ctx.fillStyle='rgba(179,136,255,.1)';ctx.strokeStyle='rgba(179,136,255,.2)';ctx.lineWidth=1;
+  roundRect(ctx,60,y,W-120,boxH,12,true,true);
+  ctx.fillStyle='rgba(234,234,244,.5)';ctx.font='400 19px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  var ins=buildInsight(r);if(ins.length>170)ins=ins.substring(0,167)+'…';
+  wrapText(ctx,ins,W/2,y+boxH/2-16,W-160,32);
 }
 
 // ============================================================
 //  SHARE TEXT
 // ============================================================
 
-function buildShareText() {
-  if (!lastResult) return '';
-  var r   = lastResult;
-  var url = window.location.href.split('?')[0];
-  return [
+function buildShareText(){
+  if(!lastResult)return'';
+  var r=lastResult,url=window.location.href.split('?')[0];
+  return[
     '💸 Was wärst du heute wert, wenn du früher investiert hättest?',
-    'Ich hab es durchgerechnet: ' + SCENARIOS[activeScenario].name + ' über ' + r.years + ' Jahre → ' + formatCurrency(r.investVal),
-    'Statt ' + formatCurrencyShort(r.fiatVal) + ' auf dem Konto. Unterschied: ' + formatCurrency(r.investVal - r.fiatVal),
-    '👉 ' + url,
-    '#Investieren #FinanzielleFreiheit #MBRN',
+    'Ich hab es durchgerechnet: '+SCENARIOS[activeScenario].name+' über '+r.years+' Jahre → '+formatCurrency(r.investVal),
+    'Statt '+formatCurrencyShort(r.fiatVal)+' auf dem Konto. Unterschied: '+formatCurrency(r.investVal-r.fiatVal),
+    '👉 '+url,
+    '#Investieren #FinanzielleFreiheit #MBRN #Vermögensaufbau',
   ].join('\n');
 }
 
@@ -541,105 +626,109 @@ function buildShareText() {
 //  EVENTS
 // ============================================================
 
-function bindEvents() {
+function bindEvents(){
 
   // Szenarien
-  document.querySelectorAll('.scenario-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.scenario-btn').forEach(function (b) { b.classList.remove('active'); });
+  document.querySelectorAll('.scenario-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.scenario-btn').forEach(function(b){b.classList.remove('active');});
       btn.classList.add('active');
-      activeScenario = btn.getAttribute('data-scenario');
+      activeScenario=btn.getAttribute('data-scenario');
       updateScenarioNote();
-      if (lastResult) calculate();
+      if(lastResult)calculate();
     });
   });
 
-  // Alter Hints
-  document.getElementById('age-now')   && document.getElementById('age-now').addEventListener('input', updateYearsHint);
-  document.getElementById('age-start') && document.getElementById('age-start').addEventListener('input', updateYearsHint);
+  // Alter → Hint
+  ['age-now','age-start'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.addEventListener('input',updateYearsHint);
+  });
 
-  // Enter = berechnen
-  ['age-now','age-start','monthly','lump','inflation-input'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('keydown', function (e) { if (e.key === 'Enter') calculate(); });
+  // Enter
+  ['age-now','age-start','monthly','lump','inflation-input'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')calculate();});
   });
 
   // Inflation Presets
-  document.querySelectorAll('.inflation-preset').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.inflation-preset').forEach(function (b) { b.classList.remove('active'); });
+  document.querySelectorAll('.inf-preset').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.inf-preset').forEach(function(b){b.classList.remove('active');});
       btn.classList.add('active');
-      var val = parseFloat(btn.getAttribute('data-val'));
-      inflation = val;
-      var inflInput = document.getElementById('inflation-input');
-      if (inflInput) inflInput.value = (val * 100).toFixed(1);
-      setText('inflation-display', '+' + (val * 100).toFixed(1) + '%/Jahr');
-      if (lastResult) calculate();
+      inflation=parseFloat(btn.getAttribute('data-val'));
+      var el=document.getElementById('inflation-input');
+      if(el)el.value=(inflation*100).toFixed(1);
+      setText('inflation-display','+'+(inflation*100).toFixed(1)+'%/Jahr');
+      if(lastResult)calculate();
     });
   });
 
-  // Inflation Custom Input
-  var inflInput = document.getElementById('inflation-input');
-  if (inflInput) {
-    inflInput.addEventListener('input', function () {
-      var val = parseFloat(inflInput.value);
-      if (!isNaN(val) && val >= 0 && val <= 20) {
-        inflation = val / 100;
-        document.querySelectorAll('.inflation-preset').forEach(function (b) { b.classList.remove('active'); });
-        setText('inflation-display', '+' + val.toFixed(1) + '%/Jahr');
-      }
+  // Custom Inflation
+  var inflEl=document.getElementById('inflation-input');
+  if(inflEl)inflEl.addEventListener('input',function(){
+    var v=parseFloat(inflEl.value);
+    if(!isNaN(v)&&v>=0&&v<=20){
+      inflation=v/100;
+      document.querySelectorAll('.inf-preset').forEach(function(b){b.classList.remove('active');});
+      setText('inflation-display','+'+v.toFixed(1)+'%/Jahr');
+      scheduleRecalc();
+    }
+  });
+
+  // Berechnen
+  var calcBtn=document.getElementById('btn-calculate');
+  if(calcBtn)calcBtn.addEventListener('click',calculate);
+
+  // Jahrestabelle toggle
+  var toggleBtn=document.getElementById('btn-toggle-table');
+  var tableWrap=document.getElementById('year-table-wrap');
+  var toggleIcon=document.getElementById('table-toggle-icon');
+  if(toggleBtn&&tableWrap){
+    toggleBtn.addEventListener('click',function(){
+      var open=tableWrap.style.display==='none';
+      tableWrap.style.display=open?'block':'none';
+      if(toggleIcon)toggleIcon.textContent=open?'▼':'▶';
+      toggleBtn.textContent=(open?'▼ ':'▶ ')+'Jahres-Übersicht '+(open?'ausblenden':'anzeigen');
     });
   }
 
-  // Berechnen
-  var calcBtn = document.getElementById('btn-calculate');
-  if (calcBtn) calcBtn.addEventListener('click', calculate);
+  // Reverse-Rechner
+  var revBtn=document.getElementById('btn-reverse');
+  if(revBtn)revBtn.addEventListener('click',calculateReverse);
+  var revInput=document.getElementById('target-amount');
+  if(revInput)revInput.addEventListener('keydown',function(e){if(e.key==='Enter')calculateReverse();});
 
   // Share
-  var shareBtn = document.getElementById('btn-share-result');
-  if (shareBtn) shareBtn.addEventListener('click', function () {
-    if (!lastResult) { showToast('⚠ Bitte zuerst berechnen'); return; }
-    var overlay = document.getElementById('share-overlay');
-    if (overlay) overlay.style.display = 'flex';
+  bind('btn-share-result',function(){
+    if(!lastResult){showToast('⚠ Bitte zuerst berechnen');return;}
+    var o=document.getElementById('share-overlay');if(o)o.style.display='flex';
   });
-
-  document.getElementById('btn-save-image')    && document.getElementById('btn-save-image').addEventListener('click',    function () { generateShareImage('post');  });
-  document.getElementById('btn-save-story')    && document.getElementById('btn-save-story').addEventListener('click',    function () { generateShareImage('story'); });
-  document.getElementById('btn-dl')            && document.getElementById('btn-dl').addEventListener('click',            function () { generateShareImage('post');  });
-  document.getElementById('btn-story-modal')   && document.getElementById('btn-story-modal').addEventListener('click',   function () { generateShareImage('story'); });
-
-  document.getElementById('btn-wa') && document.getElementById('btn-wa').addEventListener('click', function () {
-    window.open('https://wa.me/?text=' + encodeURIComponent(buildShareText()), '_blank');
-  });
-  document.getElementById('btn-tw') && document.getElementById('btn-tw').addEventListener('click', function () {
-    window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(buildShareText()), '_blank');
-  });
-  document.getElementById('btn-copy') && document.getElementById('btn-copy').addEventListener('click', function () {
-    var url = window.location.href.split('?')[0];
-    if (navigator.clipboard) navigator.clipboard.writeText(url).catch(function () { fallbackCopy(url); });
+  bind('btn-save-image',  function(){generateShareImage('post');});
+  bind('btn-save-story',  function(){generateShareImage('story');});
+  bind('btn-dl',          function(){generateShareImage('post');});
+  bind('btn-story-modal', function(){generateShareImage('story');});
+  bind('btn-wa',          function(){window.open('https://wa.me/?text='+encodeURIComponent(buildShareText()),'_blank');});
+  bind('btn-tw',          function(){window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(buildShareText()),'_blank');});
+  bind('btn-copy',        function(){
+    var url=window.location.href.split('?')[0];
+    if(navigator.clipboard)navigator.clipboard.writeText(url).catch(function(){fallbackCopy(url);});
     else fallbackCopy(url);
-    var btn = document.getElementById('btn-copy');
-    btn.textContent = '✓ Kopiert!';
-    setTimeout(function () { btn.innerHTML = '🔗 Link kopieren'; }, 2000);
+    setText('btn-copy','✓ Kopiert!');
+    setTimeout(function(){setText('btn-copy','🔗 Link kopieren');},2000);
   });
 
   // Modals
-  closeModal('share-close',   'share-overlay');
-  closeModal('privacy-close', 'privacy-overlay');
-  closeOnBackdrop('share-overlay');
-  closeOnBackdrop('privacy-overlay');
+  closeModal('share-close','share-overlay');
+  closeModal('privacy-close','privacy-overlay');
+  closeBackdrop('share-overlay');
+  closeBackdrop('privacy-overlay');
+  bind('btn-privacy',function(){var o=document.getElementById('privacy-overlay');if(o)o.style.display='flex';});
 
-  var privBtn = document.getElementById('btn-privacy');
-  if (privBtn) privBtn.addEventListener('click', function () {
-    var overlay = document.getElementById('privacy-overlay');
-    if (overlay) overlay.style.display = 'flex';
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    ['share-overlay','privacy-overlay'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.style.display = 'none';
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape')return;
+    ['share-overlay','privacy-overlay'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.style.display='none';
     });
   });
 }
@@ -648,109 +737,62 @@ function bindEvents() {
 //  HILFSFUNKTIONEN
 // ============================================================
 
-function setCalcLoading(on) {
-  var btn  = document.getElementById('btn-calculate');
-  var icon = document.getElementById('calc-icon');
-  var text = document.getElementById('calc-text');
-  if (!btn) return;
-  if (on) {
-    btn.classList.add('loading');
-    if (icon) icon.style.animation = 'spin 1s linear infinite';
-    if (text) text.textContent = 'Berechne…';
-  } else {
-    btn.classList.remove('loading');
-    if (icon) { icon.style.animation = ''; icon.textContent = '✦'; }
-    if (text) text.textContent = 'Jetzt berechnen';
-  }
+function setCalcLoading(on){
+  var btn=document.getElementById('btn-calculate');
+  var icon=document.getElementById('calc-icon');
+  var txt=document.getElementById('calc-text');
+  if(!btn)return;
+  if(on){btn.classList.add('loading');if(icon)icon.style.animation='spin 1s linear infinite';if(txt)txt.textContent='Berechne…';}
+  else{btn.classList.remove('loading');if(icon){icon.style.animation='';icon.textContent='✦';}if(txt)txt.textContent='Jetzt berechnen';}
 }
 
-function showError(id, msg) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = '⚠ ' + msg;
-  el.style.display = 'block';
-}
-function hideError(id) {
-  var el = document.getElementById(id);
-  if (el) el.style.display = 'none';
+function showError(id,msg){var el=document.getElementById(id);if(el){el.textContent='⚠ '+msg;el.style.display='block';}}
+function hideError(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+
+function updateYearsHint(){
+  var n=parseInt(getVal('age-now'),10)||0,s=parseInt(getVal('age-start'),10)||0;
+  var el=document.getElementById('years-hint');if(!el)return;
+  var y=n-s;
+  el.textContent=y<=0?'— Startalter muss kleiner als aktuelles Alter sein':'= '+y+' Jahre Wachstum verpasst';
 }
 
-function updateYearsHint() {
-  var ageNow   = parseInt(getVal('age-now'),   10) || 0;
-  var ageStart = parseInt(getVal('age-start'), 10) || 0;
-  var years    = ageNow - ageStart;
-  var el       = document.getElementById('years-hint');
-  if (!el) return;
-  if (years <= 0) el.textContent = '— Startalter muss kleiner als aktuelles Alter sein';
-  else            el.textContent = '= ' + years + ' Jahre Wachstum verpasst';
+function updateScenarioNote(){
+  var notes={'sp500':'Historische Durchschnittsrendite S&P 500 (1957–2024). Vergangene Performance ist keine Garantie.','world-etf':'MSCI World historische Durchschnittsrendite (~1970–2024). Vergangene Performance ist keine Garantie.','btc':'Bitcoin ø 60%/Jahr (2013–2024). Hochspekulativ — bei steigender Marktkapitalisierung deutlich geringere Renditen wahrscheinlich.','savings':'Sparkonto DE geschätzter Schnitt 2000–2024.'};
+  var el=document.getElementById('scenario-disclaimer');if(el)el.textContent=notes[activeScenario]||'';
 }
 
-function updateScenarioNote() {
-  var notes = {
-    'sp500':     '* S&P 500 historische Durchschnittsrendite 1957–2024. Vergangene Performance ist keine Garantie.',
-    'world-etf': '* MSCI World historische Durchschnittsrendite ~1970–2024. Vergangene Performance ist keine Garantie.',
-    'btc':       '* Bitcoin ø 60%/Jahr (2013–2024). Bei steigender Marktkapitalisierung werden solche Renditen unwahrscheinlicher. Hochspekulativ — nur was du verlieren kannst.',
-    'savings':   '* Sparkonto DE geschätzter Schnitt 2000–2024. Aktuell teils höher.',
-  };
-  var el = document.getElementById('scenario-disclaimer');
-  if (el) el.textContent = notes[activeScenario] || '';
+function getVal(id){var el=document.getElementById(id);return el?el.value:'';}
+function setText(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
+function bind(id,fn){var el=document.getElementById(id);if(el)el.addEventListener('click',fn);}
+
+function closeModal(btnId,overlayId){
+  var btn=document.getElementById(btnId);
+  if(btn)btn.addEventListener('click',function(){var el=document.getElementById(overlayId);if(el)el.style.display='none';});
+}
+function closeBackdrop(overlayId){
+  var el=document.getElementById(overlayId);
+  if(el)el.addEventListener('click',function(e){if(e.target===el)el.style.display='none';});
+}
+function fallbackCopy(text){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+
+function formatCurrency(v){return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v);}
+function formatCurrencyShort(v){
+  if(v>=1000000)return(v/1000000).toFixed(1).replace('.',',')+' Mio. €';
+  if(v>=1000)return Math.round(v/1000)+' T€';
+  return formatCurrency(v);
 }
 
-function getVal(id) {
-  var el = document.getElementById(id);
-  return el ? el.value : '';
-}
-
-function setText(id, val) {
-  var el = document.getElementById(id);
-  if (el) el.textContent = val;
-}
-
-function formatCurrency(val) {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
-}
-
-function formatCurrencyShort(val) {
-  if (val >= 1000000) return (val / 1000000).toFixed(1).replace('.', ',') + ' Mio. €';
-  if (val >= 1000)    return Math.round(val / 1000) + ' T€';
-  return formatCurrency(val);
-}
-
-function closeModal(btnId, overlayId) {
-  var btn = document.getElementById(btnId);
-  if (btn) btn.addEventListener('click', function () {
-    var el = document.getElementById(overlayId);
-    if (el) el.style.display = 'none';
+function wrapText(ctx,text,x,y,maxW,lh){
+  var words=text.split(' '),line='',ly=y;
+  words.forEach(function(w){
+    var t=line+(line?' ':'')+w;
+    if(ctx.measureText(t).width>maxW&&line){ctx.fillText(line,x,ly);line=w;ly+=lh;}else line=t;
   });
+  if(line)ctx.fillText(line,x,ly);
 }
-function closeOnBackdrop(overlayId) {
-  var el = document.getElementById(overlayId);
-  if (el) el.addEventListener('click', function (e) { if (e.target === el) el.style.display = 'none'; });
-}
-function fallbackCopy(text) {
-  var ta = document.createElement('textarea');
-  ta.value = text; document.body.appendChild(ta); ta.select();
-  document.execCommand('copy'); document.body.removeChild(ta);
-}
-
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  var words = text.split(' '), line = '', lineY = y;
-  words.forEach(function (word) {
-    var test = line + (line ? ' ' : '') + word;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      ctx.fillText(line, x, lineY); line = word; lineY += lineHeight;
-    } else { line = test; }
-  });
-  if (line) ctx.fillText(line, x, lineY);
-}
-
-function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
-  ctx.closePath();
-  if (fill)   ctx.fill();
-  if (stroke) ctx.stroke();
+function roundRect(ctx,x,y,w,h,r,fill,stroke){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke();
 }
