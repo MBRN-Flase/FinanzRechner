@@ -245,10 +245,13 @@ function calculate() {
           zinseszins = true;
         }
 
+        // Korrektur: Wir speichern sowohl Real- als auch Nominalwerte, 
+        // nutzen aber für den primären Vergleich (invest) den Realwert.
         chartData.push({
           year: currentYear,
-          fiat: Math.round(fiatReal),
-          invest: Math.round(investVal),
+          fiat: Math.round(fiatReal),      // Kaufkraft Bargeld
+          invest: Math.round(investReal),  // Kaufkraft Investment (NEU: war vorher nominal)
+          investNominal: Math.round(investVal), // Nominalwert für Details
           total: Math.round(totalInvested),
           milestone: milestone
         });
