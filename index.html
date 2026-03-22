@@ -2,166 +2,166 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Was wärst du heute wert? – Kostenloser Investitions-Rechner</title>
-  <meta name="description" content="Berechne in Sekunden was du heute hättest, wenn du früher investiert hättest. Kostenlos, anonym, lokal berechnet." />
-  <meta property="og:title" content="Was wärst du heute wert? · MBRN" />
-  <meta property="og:description" content="Finde heraus wie viel Geld du heute hättest — wenn du früher angefangen hättest." />
-  <meta property="og:type" content="website" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MBRN Finanz-Rechner | Zinseszins & Inflation</title>
+  
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
+  <!-- BACKGROUND -->
   <div class="bg-base"></div>
   <div class="bg-glow bg-glow--1"></div>
   <div class="bg-glow bg-glow--2"></div>
   <div class="bg-grid"></div>
 
-  <!-- TOAST -->
+  <!-- TOAST NOTIFICATION -->
   <div class="toast" id="toast"></div>
 
-  <!-- NAV -->
+  <!-- TOPNAV -->
   <nav class="topnav">
     <div class="topnav-brand">
       <span class="topnav-logo">✦</span>
-      <span class="topnav-name">MBRN Tools</span>
+      <span class="topnav-name">MBRN</span>
     </div>
     <div class="topnav-links">
-      <a class="topnav-link" href="https://flase-mbrn.github.io/discipline-tracker" target="_blank">Disziplin Tracker</a>
-      <span class="topnav-dot">·</span>
-      <a class="topnav-link" href="https://ko-fi.com/flasembrn" target="_blank" rel="noopener">Ko-fi ☕</a>
+      <span class="topnav-dot">●</span>
+      <a href="https://flase-mbrn.github.io/discipline-tracker" class="topnav-link" target="_blank">Disziplin Tracker</a>
     </div>
   </nav>
 
+  <!-- MAIN CONTAINER -->
   <div class="container">
-
+    
     <!-- HEADER -->
     <header class="header">
-      <span class="header-eyebrow">✦ KOSTENLOS · ANONYM · LOKAL BERECHNET</span>
-      <h1 class="title">Was wärst du<br/><span class="title-accent">heute wert?</span></h1>
-      <p class="subtitle">Berechne in Sekunden wie viel du heute hättest —<br/>wenn du früher angefangen hättest zu investieren.</p>
+      <span class="header-eyebrow">Finanz-Rechner</span>
+      <h1 class="title">Was wärst du <span class="title-accent">heute wert?</span></h1>
+      <p class="subtitle">Berechne den wahren Wert deiner Zeit. Zinseszins vs. Inflation.</p>
       <div class="trust-row">
+        <span class="trust-badge">✓ Lokal im Browser</span>
         <span class="trust-badge">✓ Keine Datenspeicherung</span>
-        <span class="trust-badge">✓ Lokal berechnet</span>
-        <span class="trust-badge">✓ Kein Konto nötig</span>
       </div>
     </header>
 
     <!-- LIVE TICKER -->
     <div class="ticker-bar">
       <div class="ticker-inner" id="ticker-inner">
-        <span class="ticker-label">BTC</span>
-        <span class="ticker-value" id="btc-price">lädt…</span>
-        <span class="ticker-sep">·</span>
+        <span class="ticker-label">Live:</span>
+        <span class="ticker-value ticker-green" id="btc-price">Lade...</span>
+        <span class="ticker-sep">/</span>
         <span class="ticker-label">ETH</span>
-        <span class="ticker-value" id="eth-price">lädt…</span>
-        <span class="ticker-sep">·</span>
-        <span class="ticker-label">S&P 500 ø</span>
-        <span class="ticker-value ticker-green">+10,2%/Jahr</span>
-        <span class="ticker-sep">·</span>
-        <span class="ticker-label">Inflation DE ø</span>
-        <span class="ticker-value ticker-red" id="inflation-display">+3,8%/Jahr</span>
+        <span class="ticker-value ticker-green" id="eth-price">Lade...</span>
+        <span class="ticker-sep">/</span>
+        <span class="ticker-label">Inflation (DE)</span>
+        <span class="ticker-value ticker-red" id="inflation-display">+3.8%/Jahr</span>
       </div>
     </div>
 
-    <!-- EINGABE CARD -->
-    <section class="input-card" id="input-card">
-      <p class="card-eyebrow">✦ Schritt 1 — Deine Situation</p>
+    <!-- INPUT SECTION -->
+    <section class="input-card">
+      <p class="card-eyebrow">✦ Deine Parameter</p>
 
-      <!-- Alter jetzt -->
+      <!-- Alter -->
       <div class="input-group">
         <div class="input-label-row">
-          <label class="input-label">Wie alt bist du heute?</label>
-          <span class="input-value-badge" id="badge-age-now">28 Jahre</span>
+          <label class="input-label">Aktuelles Alter</label>
+          <span class="input-value-badge" id="badge-age-now">30 Jahre</span>
         </div>
-        <input type="range" class="slider" id="slider-age-now" min="18" max="80" value="28" />
-        <div class="input-row">
-          <input type="number" class="input-field" id="age-now" value="28" min="18" max="80" />
-          <span class="input-unit">Jahre</span>
-        </div>
-        <p class="input-error" id="err-age" style="display:none"></p>
+        <input type="range" class="slider" id="slider-age-now" min="18" max="80" value="30" />
+        <input type="number" class="input-field" id="age-now" value="30" style="display:none" />
       </div>
 
       <!-- Startalter -->
       <div class="input-group">
         <div class="input-label-row">
-          <label class="input-label">Hypothetisches Startalter</label>
-          <span class="input-value-badge" id="badge-age-start">18 Jahre</span>
+          <label class="input-label">Startalter (Vergangenheit)</label>
+          <span class="input-value-badge" id="badge-age-start">20 Jahre</span>
         </div>
-        <input type="range" class="slider" id="slider-age-start" min="10" max="79" value="18" />
-        <div class="input-row">
-          <input type="number" class="input-field" id="age-start" value="18" min="10" max="79" />
-          <span class="input-unit">Jahre</span>
-        </div>
-        <p class="input-hint" id="years-hint">= 10 Jahre Wachstum verpasst</p>
+        <input type="range" class="slider" id="slider-age-start" min="10" max="70" value="20" />
+        <input type="number" class="input-field" id="age-start" value="20" style="display:none" />
+        <span class="input-hint" id="years-hint">= 10 Jahre Wachstum verpasst</span>
+        <span class="input-error" id="err-age" style="display:none"></span>
       </div>
 
-      <!-- Monatsbetrag -->
+      <!-- Sparrate -->
       <div class="input-group">
         <div class="input-label-row">
-          <label class="input-label">Monatlicher Betrag</label>
-          <span class="input-value-badge" id="badge-monthly">200 €</span>
+          <label class="input-label">Monatliche Sparrate</label>
+          <span class="input-value-badge" id="badge-monthly">250 €</span>
         </div>
-        <input type="range" class="slider" id="slider-monthly" min="10" max="5000" step="10" value="200" />
-        <div class="input-row">
-          <span class="input-prefix">€</span>
-          <input type="number" class="input-field input-field--pfx" id="monthly" value="200" min="1" />
-        </div>
+        <input type="range" class="slider" id="slider-monthly" min="0" max="2500" step="50" value="250" />
+        <input type="number" class="input-field" id="monthly" value="250" style="display:none" />
       </div>
 
-      <!-- Startkapital -->
+      <!-- Dynamik -->
       <div class="input-group">
-        <label class="input-label">Startkapital (optional)</label>
+        <div class="input-label-row">
+          <label class="input-label">Jährliche Erhöhung (Dynamik)</label>
+          <span class="input-value-badge" id="badge-dynamic">0 %</span>
+        </div>
+        <input type="range" class="slider" id="slider-dynamic" min="0" max="10" step="1" value="0" />
+        <input type="number" class="input-field" id="dynamic-rate" value="0" style="display:none" />
+      </div>
+
+      <!-- Einmalzahlung -->
+      <div class="input-group" style="margin-top:4px">
+        <label class="input-label">Startkapital (Einmalig)</label>
         <div class="input-row">
           <span class="input-prefix">€</span>
           <input type="number" class="input-field input-field--pfx" id="lump" value="0" min="0" />
         </div>
       </div>
 
-      <!-- Inflation -->
-      <div class="input-group">
-        <div class="input-label-row">
-          <label class="input-label">Inflation (anpassbar)</label>
-          <div class="inflation-presets" id="inflation-presets">
-            <button class="inf-preset" data-val="0.02">2%</button>
-            <button class="inf-preset active" data-val="0.038">3,8%</button>
-            <button class="inf-preset" data-val="0.06">6%</button>
-          </div>
-        </div>
+      <!-- Inflation Custom -->
+      <div class="input-group" style="margin-top:4px">
+        <label class="input-label">Angenommene Inflation p.a.</label>
         <div class="input-row">
           <input type="number" class="input-field" id="inflation-input" value="3.8" min="0" max="20" step="0.1" />
-          <span class="input-unit">%/Jahr</span>
+          <span class="input-unit">%</span>
+        </div>
+        <div class="inflation-presets">
+          <button class="inf-preset" data-val="0.02">2% (EZB-Ziel)</button>
+          <button class="inf-preset active" data-val="0.038">3.8% (Realistisch)</button>
+          <button class="inf-preset" data-val="0.07">7% (Krise)</button>
         </div>
       </div>
 
       <!-- Szenarien -->
-      <p class="card-eyebrow">✦ Schritt 2 — Anlagestrategie</p>
-      <div class="scenario-grid">
-        <button class="scenario-btn active" data-scenario="sp500">
-          <span class="scenario-icon">📈</span>
-          <span class="scenario-name">S&P 500</span>
-          <span class="scenario-rate">ø 10,2%</span>
-        </button>
-        <button class="scenario-btn" data-scenario="world-etf">
-          <span class="scenario-icon">🌍</span>
-          <span class="scenario-name">World ETF</span>
-          <span class="scenario-rate">ø 8%</span>
-        </button>
-        <button class="scenario-btn" data-scenario="btc">
-          <span class="scenario-icon">₿</span>
-          <span class="scenario-name">Bitcoin</span>
-          <span class="scenario-rate" id="btc-scenario-rate">ø 60%*</span>
-        </button>
-        <button class="scenario-btn" data-scenario="savings">
-          <span class="scenario-icon">🏦</span>
-          <span class="scenario-name">Sparkonto</span>
-          <span class="scenario-rate">ø 0,5%</span>
-        </button>
+      <div class="input-group" style="margin-top:8px">
+        <label class="input-label">Investment-Szenario</label>
+        <div class="scenario-grid">
+          <button class="scenario-btn active" data-scenario="sp500">
+            <span class="scenario-icon">🇺🇸</span>
+            <span class="scenario-name">S&P 500</span>
+            <span class="scenario-rate">~10.2% p.a.</span>
+          </button>
+          <button class="scenario-btn" data-scenario="world-etf">
+            <span class="scenario-icon">🌍</span>
+            <span class="scenario-name">World ETF</span>
+            <span class="scenario-rate">~8.0% p.a.</span>
+          </button>
+          <button class="scenario-btn" data-scenario="btc">
+            <span class="scenario-icon">₿</span>
+            <span class="scenario-name">Bitcoin</span>
+            <span class="scenario-rate" id="btc-scenario-rate">~25.0% p.a.</span>
+          </button>
+          <button class="scenario-btn" data-scenario="savings">
+            <span class="scenario-icon">🏦</span>
+            <span class="scenario-name">Sparkonto</span>
+            <span class="scenario-rate">~2.0% p.a.</span>
+          </button>
+        </div>
+        <p class="scenario-disclaimer" id="scenario-disclaimer">Historische Durchschnittsrendite S&P 500 (1957–2024). Vergangene Performance ist keine Garantie.</p>
       </div>
-      <p class="scenario-disclaimer" id="scenario-disclaimer">Historische Durchschnittswerte. Vergangene Performance ist keine Garantie für zukünftige Ergebnisse.</p>
 
       <button class="btn-calculate" id="btn-calculate">
         <span class="btn-calc-icon" id="calc-icon">✦</span>
@@ -169,21 +169,21 @@
       </button>
     </section>
 
-    <!-- ===== ERGEBNIS ===== -->
+    <!-- RESULT SECTION -->
     <section class="result-section" id="result-section" style="display:none">
-
+      
       <!-- HERO -->
       <div class="result-hero">
-        <div class="hero-label">Du hättest heute</div>
+        <p class="hero-label">Dein potenzielles Vermögen</p>
         <div class="hero-number" id="hook-number">—</div>
-        <div class="hero-sub" id="hook-sub"></div>
+        <p class="hero-sub" id="hook-sub">Entspricht einer heutigen Kaufkraft von ca. —</p>
         <div class="tax-hint" id="tax-hint" style="display:none">
           <span>ℹ</span>
-          <span>Nach ~25% Abgeltungssteuer: <strong id="tax-after">—</strong></span>
+          <span id="tax-after">—</span>
         </div>
       </div>
 
-      <!-- KONTEXT-VERGLEICH (neues Feature) -->
+      <!-- KONTEXT BOX (neues Feature) -->
       <div class="context-box" id="context-box">
         <p class="context-label">✦ Das entspricht ungefähr</p>
         <div class="context-grid" id="context-grid"></div>
@@ -306,8 +306,9 @@
         <p class="cta-headline">Fang heute an.</p>
         <p class="cta-sub">Die beste Investition ist die, die du nicht aufgeschoben hast.</p>
         <div class="cta-buttons">
-          <a class="btn-cta-primary" href="https://www.justetf.com/de/" target="_blank" rel="noopener">ETFs entdecken →</a>
-          <a class="btn-cta-secondary" href="https://www.coingecko.com/de" target="_blank" rel="noopener">Crypto erkunden →</a>
+          <!-- Affiliate Links Struktur -->
+          <a class="btn-cta-primary" href="https://ref.trade.re/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Trade Republic (Empfehlung) →</a>
+          <a class="btn-cta-secondary" href="https://de.scalable.capital/einladung/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Scalable Capital →</a>
         </div>
         <p class="cta-disclaimer">Keine Finanzberatung. Eigenverantwortlich handeln. Steuerliche Beratung individuell prüfen.</p>
       </div>
@@ -381,8 +382,9 @@
         <p><strong>Externe Dienste</strong><br/>Live-Kurse werden von der öffentlichen CoinGecko API (coingecko.com) abgefragt. Dabei wird deine IP-Adresse an CoinGecko übertragen. Google Fonts werden von fonts.googleapis.com geladen.</p>
         <p><strong>Hinweis zur Besteuerung</strong><br/>In Deutschland gilt auf Kapitalerträge die Abgeltungssteuer von 25% + Soli (≈ 26,375%). Der Sparerpauschbetrag beträgt 1.000 € (2024). Dieses Tool zeigt vereinfachte Schätzungen — individuelle Steuerberatung empfohlen.</p>
         <p><strong>Keine Finanzberatung</strong><br/>Dieses Tool dient ausschließlich der illustrativen Darstellung mathematischer Zusammenhänge. Es stellt keine Anlageberatung im Sinne des WpHG dar. Vergangene Performance ist keine Garantie für zukünftige Ergebnisse.</p>
-        <p><strong>Impressum</strong><br/>Dieses Projekt wird privat betrieben unter dem Pseudonym Flase / MBRN. Es handelt sich um ein nicht-kommerzielles Open-Source-Projekt.<br/>Kontakt: flase-mbrn.github.io</p>
-        <p class="privacy-small">Zuletzt aktualisiert: 2025 · v1.3 · Kein Impressumspflicht (privat, nicht-kommerziell)</p>
+        <p><strong>Impressum (Angaben gemäß § 5 TMG)</strong><br/>Max Mustermann<br/>Musterstraße 1<br/>12345 Musterstadt<br/>Kontakt: kontakt@mbrn-tools.de</p>
+        <p><strong>Datenschutzerklärung (DSGVO)</strong><br/>Diese Webseite nutzt Google Fonts (lokal eingebunden oder via Google Server, wobei die IP-Adresse übertragen wird) sowie die CoinGecko API zur Preisabfrage (IP-Übertragung an CoinGecko). Es findet kein weiteres Tracking (z.B. Google Analytics) statt. Alle Berechnungen erfolgen lokal im Browser.</p>
+        <p class="privacy-small">Zuletzt aktualisiert: 2026 · v1.4 · Affiliate-Links sind als solche gekennzeichnet.</p>
       </div>
     </div>
   </div>

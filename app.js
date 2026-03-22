@@ -8,12 +8,12 @@
 
 // Korrigierte Szenarien mit realistischeren Wachstumsraten
 const SCENARIOS = {
-  'sp500':     { name: 'S&P 500',   rate: 0.102 },
-  'world-etf': { name: 'World ETF', rate: 0.08  },
-  'btc':       { name: 'Bitcoin',   rate: 0.25  }, // Begrenzt auf 25% p.a. für realistischere Langzeit-Simulation
-  'savings':   { name: 'Sparkonto', rate: 0.02  }, // Realistischerer Zins
+  'sp500':     { name: 'S&P 500',   rate: 0.102, type: 'etf' },
+  'world-etf': { name: 'World ETF', rate: 0.08,  type: 'etf' },
+  'btc':       { name: 'Bitcoin',   rate: 0.25,  type: 'crypto' }, // Begrenzt auf 25% p.a. für realistischere Langzeit-Simulation
+  'savings':   { name: 'Sparkonto', rate: 0.02,  type: 'cash' }, // Realistischerer Zins
 };
-const TAX_RATE   = 0.26375;
+const TAX_RATE_BASE = 0.26375; // 25% Abgeltungssteuer + 5.5% Soli
 const FREIBETRAG = 1000;
 
 let activeScenario = 'sp500';
@@ -21,6 +21,7 @@ let lastResult     = null;
 let inflation      = 0.038;
 let debounceTimer  = null;
 let counterTimer   = null;
+let chartResizeObserver = null;
 
 // ============================================================
 //  INIT
@@ -31,7 +32,29 @@ document.addEventListener('DOMContentLoaded', function () {
   updateYearsHint();
   initSliders();
   bindEvents();
+  initChartResizeObserver();
 });
+
+// ============================================================
+//  CHART RESIZE OBSERVER
+// ============================================================
+
+function initChartResizeObserver() {
+  const chartWrap = document.querySelector('.chart-wrap');
+  if (!chartWrap) return;
+
+  chartResizeObserver = new ResizeObserver(entries => {
+    // Debounce the resize to prevent too many redraws
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      if (lastResult && lastResult.chartData) {
+        drawChart(lastResult.chartData, lastResult.investVal);
+      }
+    }, 100);
+  });
+
+  chartResizeObserver.observe(chartWrap);
+}
 
 // ============================================================
 //  TOAST
@@ -55,7 +78,14 @@ function fetchPrices() {
 
   fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur',
     { signal: ctrl.signal })
-    .then(function (r) { clearTimeout(timer); return r.json(); })
+    .then(function (r) {
+      clearTimeout(timer);
+      if (!r.ok) {
+        if (r.status === 429) throw new Error('rate_limit');
+        throw new Error('api_error');
+      }
+      return r.json();
+    })
     .then(function (d) {
       var btc = d && d.bitcoin  && d.bitcoin.eur;
       var eth = d && d.ethereum && d.ethereum.eur;
@@ -63,10 +93,21 @@ function fetchPrices() {
       setText('eth-price', eth ? formatCurrency(eth) : '~2.000 €');
       if (btc) setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
     })
-    .catch(function () {
+    .catch(function (e) {
       clearTimeout(timer);
       setText('btc-price', '~84.000 €');
       setText('eth-price', '~2.000 €');
+
+      console.warn('CoinGecko API Fehler/Rate Limit. Nutze Fallback-Preise.');
+      var tickerInner = document.getElementById('ticker-inner');
+      if (tickerInner && !document.getElementById('api-warning')) {
+        var warning = document.createElement('span');
+        warning.id = 'api-warning';
+        warning.className = 'ticker-label';
+        warning.style.color = 'var(--gold)';
+        warning.textContent = '(Fallback-Preise)';
+        tickerInner.appendChild(warning);
+      }
     });
 }
 
@@ -78,6 +119,7 @@ function initSliders() {
   linkSlider('slider-age-now',   'age-now',   'badge-age-now',   function(v){ return v+' Jahre'; });
   linkSlider('slider-age-start', 'age-start', 'badge-age-start', function(v){ return v+' Jahre'; });
   linkSlider('slider-monthly',   'monthly',   'badge-monthly',   function(v){ return v+' €'; });
+  linkSlider('slider-dynamic',   'dynamic-rate', 'badge-dynamic', function(v){ return v+' %'; });
   document.querySelectorAll('.slider').forEach(function(sl){
     updateSliderFill(sl);
     sl.addEventListener('input', function(){ updateSliderFill(sl); });
@@ -111,11 +153,11 @@ function updateSliderFill(sl) {
   sl.style.background = 'linear-gradient(90deg,#b388ff '+pct+'%,rgba(100,70,200,.2) '+pct+'%)';
 }
 
-// Debounced Auto-Neuberechnung (600ms nach letzter Änderung)
+// Debounced Auto-Neuberechnung (300ms nach letzter Änderung)
 function scheduleRecalc() {
   if (!lastResult) return; // Nur neuberechnen wenn bereits ein Ergebnis vorhanden
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(calculate, 600);
+  debounceTimer = setTimeout(calculate, 300);
 }
 
 // ============================================================
@@ -126,7 +168,22 @@ function calculate() {
   var ageNow   = parseInt(getVal('age-now'),   10) || 0;
   var ageStart = parseInt(getVal('age-start'), 10) || 0;
   var monthly  = parseFloat(getVal('monthly'))     || 0;
+  var dynamicRate = parseFloat(getVal('dynamic-rate')) / 100 || 0;
   var lump     = parseFloat(getVal('lump'))         || 0;
+
+  // Input Sanitization (Verhindere NaN oder Infinite)
+  if (ageNow < 0) ageNow = 0;
+  if (ageNow > 120) ageNow = 120;
+  if (ageStart < 0) ageStart = 0;
+  if (ageStart > 120) ageStart = 120;
+  if (monthly < 0) monthly = 0;
+  if (monthly > 10000000) monthly = 10000000;
+  if (lump < 0) lump = 0;
+  if (lump > 1000000000) lump = 1000000000;
+  if (dynamicRate < 0) dynamicRate = 0;
+  if (dynamicRate > 1) dynamicRate = 1;
+  if (inflation < -0.1) inflation = -0.1;
+  if (inflation > 1) inflation = 1;
 
   hideError('err-age');
 
@@ -139,7 +196,7 @@ function calculate() {
 
   var years   = ageNow - ageStart;
   var rendite = SCENARIOS[activeScenario].rate;
-  
+
   // Begrenze extreme Renditen für mathematische Stabilität
   if (rendite > 0.30) rendite = 0.30;
 
@@ -149,46 +206,99 @@ function calculate() {
     var investVal = lump;
     var totalInvested = lump;
     var totalMonths = years * 12;
-    
+    var currentMonthly = monthly;
+
     // Monatliche Rendite berechnen: (1 + r)^(1/12) - 1
     var monthlyRate = Math.pow(1 + rendite, 1 / 12) - 1;
-    
-    var chartData = [{ year:0, fiat:Math.round(lump), invest:Math.round(lump), total:Math.round(lump) }];
+
+    var chartData = [{ year:0, fiat:Math.round(lump), invest:Math.round(lump), total:Math.round(lump), milestone: null }];
+
+    var mieteGedeckt = false;
+    var zinseszins = false;
 
     for (var m = 1; m <= totalMonths; m++) {
+      var startInvestVal = investVal;
       // Monatliche Einzahlung + Verzinsung (DCA)
-      investVal = (investVal + monthly) * (1 + monthlyRate);
-      totalInvested += monthly;
-      
+      investVal = (investVal + currentMonthly) * (1 + monthlyRate);
+      totalInvested += currentMonthly;
+
       // Daten für den Chart am Ende jedes Jahres sammeln
       if (m % 12 === 0) {
         var currentYear = m / 12;
-        // Inflationsbereinigung für den "Fiat"-Wert (Kaufkraftverlust)
-        // realValue = nominalValue / (1 + inflationRate)^years
-        var fiatReal = totalInvested / Math.pow(1 + inflation, currentYear);
-        
-        chartData.push({ 
-          year: currentYear, 
-          fiat: Math.round(fiatReal), 
-          invest: Math.round(investVal), 
-          total: Math.round(totalInvested) 
+        // Inflationsbereinigung
+        var fiatReal = totalInvested / Math.pow(1 + inflation, currentYear); // Uninvestiertes Geld
+        var investReal = investVal / Math.pow(1 + inflation, currentYear);   // Investiertes Geld (Kaufkraft)
+
+        var milestone = null;
+
+        // Meilenstein: Miete gedeckt (4% Entnahme > 1000€/Monat)
+        if (!mieteGedeckt && (investReal * 0.04) / 12 > 1000) {
+          milestone = 'Miete gedeckt';
+          mieteGedeckt = true;
+        }
+
+        // Meilenstein: Zinseszinseffekt-Überholung (Zinsen > Sparrate)
+        // Zinsen dieses Monats = (startInvestVal + currentMonthly) * monthlyRate
+        var interestThisMonth = (startInvestVal + currentMonthly) * monthlyRate;
+        if (!zinseszins && interestThisMonth > currentMonthly && currentMonthly > 0) {
+          milestone = (milestone ? milestone + ' & ' : '') + 'Zinseszins > Sparrate';
+          zinseszins = true;
+        }
+
+        chartData.push({
+          year: currentYear,
+          fiat: Math.round(fiatReal),
+          invest: Math.round(investVal),
+          total: Math.round(totalInvested),
+          milestone: milestone
         });
+
+        // Sparraten-Dynamik: Jährliche Erhöhung der monatlichen Sparrate
+        currentMonthly = currentMonthly * (1 + dynamicRate);
       }
     }
 
     // Endwert inflationsbereinigen für den Vergleich
-    var fiatVal = totalInvested / Math.pow(1 + inflation, years);
-    
+    var fiatVal = totalInvested / Math.pow(1 + inflation, years); // Uninvestiert
+    var realValue = investVal / Math.pow(1 + inflation, years);   // Investiert (Kaufkraft)
+
     var rawGain       = investVal - totalInvested;
     var taxable       = Math.max(0, rawGain - FREIBETRAG);
-    var afterTax      = investVal - taxable * TAX_RATE;
+
+    // Steuerlogik basierend auf Asset-Klasse
+    var afterTax = investVal;
+    var effectiveTaxRate = 0;
+    var taxType = SCENARIOS[activeScenario].type;
+
+    if (taxType === 'etf') {
+      // Aktien-ETFs: 30% Teilfreistellung -> 70% sind steuerpflichtig
+      effectiveTaxRate = TAX_RATE_BASE * 0.7;
+      afterTax = investVal - (taxable * effectiveTaxRate);
+    } else if (taxType === 'crypto') {
+      // Krypto: Nach 1 Jahr Haltefrist steuerfrei (vereinfachte Annahme für Sparplan > 1 Jahr)
+      // Wir nehmen an, dass der Großteil steuerfrei ist, wenn years > 1
+      if (years > 1) {
+        effectiveTaxRate = 0;
+        afterTax = investVal; // Steuerfrei
+      } else {
+        // Unter 1 Jahr: Persönlicher Einkommenssteuersatz (hier vereinfacht auf Base-Rate geschätzt)
+        effectiveTaxRate = TAX_RATE_BASE;
+        afterTax = investVal - (taxable * effectiveTaxRate);
+      }
+    } else {
+      // Cash/Zinsen: Volle Abgeltungssteuer
+      effectiveTaxRate = TAX_RATE_BASE;
+      afterTax = investVal - (taxable * effectiveTaxRate);
+    }
+
     var factor        = totalInvested > 0 ? investVal / totalInvested : 0;
 
     lastResult = {
-      fiatVal:fiatVal, investVal:investVal, afterTax:afterTax,
+      fiatVal:fiatVal, realValue:realValue, investVal:investVal, afterTax:afterTax,
       totalInvested:totalInvested, gain:rawGain, factor:factor,
-      years:years, monthly:monthly, lump:lump, chartData:chartData,
+      years:years, monthly:monthly, dynamicRate:dynamicRate, lump:lump, chartData:chartData,
       ageNow:ageNow, ageStart:ageStart, rendite:rendite,
+      taxType: taxType, effectiveTaxRate: effectiveTaxRate
     };
 
     setCalcLoading(false);
@@ -207,16 +317,22 @@ function showResult(r) {
 
   // Hero mit animiertem Counter
   animateCounter('hook-number', r.investVal);
-  setText('hook-sub',
-    r.investVal > r.fiatVal
-      ? 'statt ' + formatCurrency(r.fiatVal) + ' auf dem Konto.'
-      : 'Früher starten = mehr Wachstum.');
+  setText('hook-sub', 'Entspricht einer heutigen Kaufkraft von ca. ' + formatCurrency(r.realValue));
 
   // Steuer-Hint
   var taxHint = document.getElementById('tax-hint');
   if (taxHint) {
-    taxHint.style.display = r.gain > FREIBETRAG ? 'inline-flex' : 'none';
-    if (r.gain > FREIBETRAG) setText('tax-after', formatCurrency(r.afterTax) + ' (ca.)');
+    if (r.taxType === 'crypto' && r.years > 1) {
+      taxHint.style.display = 'inline-flex';
+      setText('tax-after', 'Steuerfrei (Haltefrist > 1 Jahr)');
+    } else if (r.gain > FREIBETRAG) {
+      taxHint.style.display = 'inline-flex';
+      var taxPercent = (r.effectiveTaxRate * 100).toFixed(1).replace('.0', '');
+      var taxLabel = r.taxType === 'etf' ? `Nach ~${taxPercent}% Steuer (Teilfreistellung): ` : `Nach ~${taxPercent}% Steuer: `;
+      setText('tax-after', taxLabel + formatCurrency(r.afterTax));
+    } else {
+      taxHint.style.display = 'none';
+    }
   }
 
   // Kontext-Vergleich (neues Feature)
@@ -234,11 +350,25 @@ function showResult(r) {
   setText('detail-factor',   r.factor.toFixed(1) + 'x');
 
   // Wow-Meter
-  var pct    = Math.min(100, Math.round(((r.factor - 1) / 19) * 100));
-  var labels = ['Besser als nichts','Solide','Gut','Sehr gut','Exzellent','Außergewöhnlich'];
   var fill   = document.getElementById('wow-fill');
-  if (fill) fill.style.width = pct + '%';
-  setText('wow-label', labels[Math.min(labels.length-1, Math.floor(pct/17))] + ' ('+pct+'%)');
+
+  if (r.realValue < r.totalInvested * 1.05) {
+    if (fill) {
+      fill.style.width = '20%';
+      fill.style.background = 'var(--gold)';
+      fill.style.boxShadow = '0 0 10px var(--gold)';
+    }
+    setText('wow-label', 'Inflationsfalle ⚠️');
+  } else {
+    var pct    = Math.min(100, Math.round(((r.factor - 1) / 19) * 100));
+    var labels = ['Besser als nichts','Solide','Gut','Sehr gut','Exzellent','Außergewöhnlich'];
+    if (fill) {
+      fill.style.width = pct + '%';
+      fill.style.background = 'var(--primary)';
+      fill.style.boxShadow = '0 0 10px var(--primary)';
+    }
+    setText('wow-label', labels[Math.min(labels.length-1, Math.floor(pct/17))] + ' ('+pct+'%)');
+  }
 
   // Insight
   setText('insight-text', buildInsight(r));
@@ -371,20 +501,22 @@ function calculateReverse() {
   var r        = lastResult;
   var rendite  = r.rendite;
   var monthly  = r.monthly;
+  var dynamicRate = r.dynamicRate || 0;
   var lump     = r.lump;
-  var yearly   = monthly * 12;
 
   var val      = lump;
   var years    = 0;
   var maxYears = 200;
-  
+  var currentMonthly = monthly;
+
   var monthlyRate = Math.pow(1 + rendite, 1 / 12) - 1;
 
   while (val < target && years < maxYears) {
     // Monatliche Berechnung für Genauigkeit
     for(var m=0; m<12; m++) {
-      val = (val + monthly) * (1 + monthlyRate);
+      val = (val + currentMonthly) * (1 + monthlyRate);
     }
+    currentMonthly = currentMonthly * (1 + dynamicRate);
     years++;
   }
 
@@ -416,6 +548,10 @@ function drawChart(data, maxInvest) {
   var canvas = document.getElementById('growth-chart');
   if (!canvas || !canvas.getContext) return;
   var ctx  = canvas.getContext('2d');
+
+  // Clear canvas for redraw (prevents memory leaks / overdrawing)
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   var dpr  = window.devicePixelRatio || 1;
   var w    = canvas.parentElement.clientWidth || 300;
   var h    = 200;
@@ -492,6 +628,30 @@ function drawChart(data, maxInvest) {
   ctx.textAlign='center';ctx.textBaseline='bottom';
   [0,Math.floor((data.length-1)/2),data.length-1].forEach(function(i){
     ctx.fillText('Jahr '+data[i].year,xP(i),h-3);
+  });
+
+  // Psychologische Meilensteine (Miete gedeckt, Zinseszins > Sparrate)
+  data.forEach(function(d, i) {
+    if (d.milestone) {
+      var mx = xP(i);
+      var my = yP(d.invest);
+
+      // Punkt zeichnen
+      ctx.beginPath();
+      ctx.arc(mx, my, 3, 0, 2 * Math.PI);
+      ctx.fillStyle = 'var(--gold)';
+      ctx.fill();
+      ctx.strokeStyle = '#141414';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Text zeichnen
+      ctx.fillStyle = 'var(--gold)';
+      ctx.font = '700 8px Space Mono,monospace';
+      ctx.textAlign = (i > data.length * 0.7) ? 'right' : 'left'; // Verhindern, dass Text abgeschnitten wird
+      var textX = (i > data.length * 0.7) ? mx - 6 : mx + 6;
+      ctx.fillText(d.milestone, textX, my - 6);
+    }
   });
 }
 
@@ -674,7 +834,7 @@ function bindEvents(){
   });
 
   // Enter
-  ['age-now','age-start','monthly','lump','inflation-input'].forEach(function(id){
+  ['age-now','age-start','monthly','dynamic-rate','lump','inflation-input'].forEach(function(id){
     var el=document.getElementById(id);
     if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')calculate();});
   });
