@@ -6,11 +6,12 @@
 // ============================================================
 'use strict';
 
+// Korrigierte Szenarien mit realistischeren Wachstumsraten
 const SCENARIOS = {
   'sp500':     { name: 'S&P 500',   rate: 0.102 },
   'world-etf': { name: 'World ETF', rate: 0.08  },
-  'btc':       { name: 'Bitcoin',   rate: 0.60  },
-  'savings':   { name: 'Sparkonto', rate: 0.005 },
+  'btc':       { name: 'Bitcoin',   rate: 0.25  }, // Begrenzt auf 25% p.a. für realistischere Langzeit-Simulation
+  'savings':   { name: 'Sparkonto', rate: 0.02  }, // Realistischerer Zins
 };
 const TAX_RATE   = 0.26375;
 const FREIBETRAG = 1000;
@@ -118,7 +119,7 @@ function scheduleRecalc() {
 }
 
 // ============================================================
-//  BERECHNUNG
+//  BERECHNUNG (KORRIGIERT)
 // ============================================================
 
 function calculate() {
@@ -134,26 +135,50 @@ function calculate() {
     showToast('⚠ Startalter muss kleiner als aktuelles Alter sein');
     return;
   }
-  if (monthly <= 0) { showToast('⚠ Bitte monatlichen Betrag eingeben'); return; }
+  if (monthly <= 0 && lump <= 0) { showToast('⚠ Bitte einen Betrag eingeben'); return; }
 
   var years   = ageNow - ageStart;
   var rendite = SCENARIOS[activeScenario].rate;
-  var yearly  = monthly * 12;
+  
+  // Begrenze extreme Renditen für mathematische Stabilität
+  if (rendite > 0.30) rendite = 0.30;
 
   setCalcLoading(true);
 
   setTimeout(function () {
-    var fiatVal = lump, investVal = lump;
+    var investVal = lump;
+    var totalInvested = lump;
+    var totalMonths = years * 12;
+    
+    // Monatliche Rendite berechnen: (1 + r)^(1/12) - 1
+    var monthlyRate = Math.pow(1 + rendite, 1 / 12) - 1;
+    
     var chartData = [{ year:0, fiat:Math.round(lump), invest:Math.round(lump), total:Math.round(lump) }];
 
-    for (var i = 0; i < years; i++) {
-      fiatVal   = (fiatVal   + yearly) * (1 - inflation);
-      investVal = (investVal + yearly) * (1 + rendite);
-      var totalIn = lump + yearly * (i + 1);
-      chartData.push({ year:i+1, fiat:Math.round(fiatVal), invest:Math.round(investVal), total:Math.round(totalIn) });
+    for (var m = 1; m <= totalMonths; m++) {
+      // Monatliche Einzahlung + Verzinsung (DCA)
+      investVal = (investVal + monthly) * (1 + monthlyRate);
+      totalInvested += monthly;
+      
+      // Daten für den Chart am Ende jedes Jahres sammeln
+      if (m % 12 === 0) {
+        var currentYear = m / 12;
+        // Inflationsbereinigung für den "Fiat"-Wert (Kaufkraftverlust)
+        // realValue = nominalValue / (1 + inflationRate)^years
+        var fiatReal = totalInvested / Math.pow(1 + inflation, currentYear);
+        
+        chartData.push({ 
+          year: currentYear, 
+          fiat: Math.round(fiatReal), 
+          invest: Math.round(investVal), 
+          total: Math.round(totalInvested) 
+        });
+      }
     }
 
-    var totalInvested = lump + yearly * years;
+    // Endwert inflationsbereinigen für den Vergleich
+    var fiatVal = totalInvested / Math.pow(1 + inflation, years);
+    
     var rawGain       = investVal - totalInvested;
     var taxable       = Math.max(0, rawGain - FREIBETRAG);
     var afterTax      = investVal - taxable * TAX_RATE;
@@ -352,9 +377,14 @@ function calculateReverse() {
   var val      = lump;
   var years    = 0;
   var maxYears = 200;
+  
+  var monthlyRate = Math.pow(1 + rendite, 1 / 12) - 1;
 
   while (val < target && years < maxYears) {
-    val = (val + yearly) * (1 + rendite);
+    // Monatliche Berechnung für Genauigkeit
+    for(var m=0; m<12; m++) {
+      val = (val + monthly) * (1 + monthlyRate);
+    }
     years++;
   }
 
@@ -368,8 +398,6 @@ function calculateReverse() {
   } else {
     var reachAge = r.ageStart + years;
     var now      = r.ageNow;
-    var fromNow  = r.years + years - r.years; // Jahre ab heutigem Stand
-    // Tatsächliche Jahre ab jetzt bis Ziel
     var futureYears = years - r.years;
 
     if (futureYears <= 0) {
@@ -757,7 +785,7 @@ function updateYearsHint(){
 }
 
 function updateScenarioNote(){
-  var notes={'sp500':'Historische Durchschnittsrendite S&P 500 (1957–2024). Vergangene Performance ist keine Garantie.','world-etf':'MSCI World historische Durchschnittsrendite (~1970–2024). Vergangene Performance ist keine Garantie.','btc':'Bitcoin ø 60%/Jahr (2013–2024). Hochspekulativ — bei steigender Marktkapitalisierung deutlich geringere Renditen wahrscheinlich.','savings':'Sparkonto DE geschätzter Schnitt 2000–2024.'};
+  var notes={'sp500':'Historische Durchschnittsrendite S&P 500 (1957–2024). Vergangene Performance ist keine Garantie.','world-etf':'MSCI World historische Durchschnittsrendite (~1970–2024). Vergangene Performance ist keine Garantie.','btc':'Bitcoin ø 25%/Jahr (konservative Simulation). Hochspekulativ — bei steigender Marktkapitalisierung deutlich geringere Renditen wahrscheinlich.','savings':'Sparkonto DE geschätzter Schnitt 2000–2024.'};
   var el=document.getElementById('scenario-disclaimer');if(el)el.textContent=notes[activeScenario]||'';
 }
 
