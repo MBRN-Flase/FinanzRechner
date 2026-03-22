@@ -336,10 +336,10 @@ function showResult(r) {
     }
   }
 
-  // Kontext-Vergleich (neues Feature)
+  // Kontext-Vergleich
   renderContextBox(r.investVal);
 
-  // Vergleich (Korrektur: realValue statt investVal für fairen Vergleich)
+  // Vergleich (Kaufkraft vs. Kaufkraft)
   setText('val-fiat',    formatCurrency(r.fiatVal));
   setText('val-invest',  formatCurrency(r.realValue));
   setText('invest-label', SCENARIOS[activeScenario].name + ' (Kaufkraft)');
@@ -352,7 +352,6 @@ function showResult(r) {
 
   // Wow-Meter
   var fill   = document.getElementById('wow-fill');
-
   if (r.realValue < r.totalInvested * 1.05) {
     if (fill) {
       fill.style.width = '20%';
@@ -377,7 +376,7 @@ function showResult(r) {
   // Chart
   drawChart(r.chartData, r.investVal);
 
-  // Jahrestabelle (befüllen, nicht öffnen)
+  // Jahrestabelle
   fillYearTable(r);
 
   // Share Preview
@@ -404,20 +403,20 @@ function animateCounter(id, targetVal) {
   void el.offsetWidth;
   el.classList.add('animating');
 
-  if (counterTimer) clearInterval(counterTimer);
-  var start     = 0;
+  if (counterTimer) cancelAnimationFrame(counterTimer);
   var duration  = 800;
   var startTime = null;
 
-  counterTimer = requestAnimationFrame(function step(ts) {
+  function step(ts) {
     if (!startTime) startTime = ts;
     var progress = Math.min((ts - startTime) / duration, 1);
-    var eased    = 1 - Math.pow(1 - progress, 3); // ease-out-cubic
+    var eased    = 1 - Math.pow(1 - progress, 3);
     var current  = Math.round(eased * targetVal);
     el.textContent = formatCurrency(current);
     if (progress < 1) counterTimer = requestAnimationFrame(step);
     else el.textContent = formatCurrency(targetVal);
-  });
+  }
+  counterTimer = requestAnimationFrame(step);
 }
 
 // ============================================================
@@ -425,13 +424,12 @@ function animateCounter(id, targetVal) {
 // ============================================================
 
 function renderContextBox(val) {
-  var box  = document.getElementById('context-box');
   var grid = document.getElementById('context-grid');
-  if (!box || !grid) return;
+  if (!grid) return;
 
-  var avgSalaryDE = 45000; // Brutto Durchschnittsgehalt DE
-  var avgRentDE   = 12000; // 1.000 €/Monat Miete × 12
-  var carAvg      = 35000; // Durchschnittlicher Neuwagen
+  var avgSalaryDE = 45000;
+  var avgRentDE   = 12000;
+  var carAvg      = 35000;
 
   var items = [
     { emoji:'💰', label:'Jahresgehälter (DE)', val: Math.round(val / avgSalaryDE * 10) / 10 },
@@ -472,11 +470,8 @@ function fillYearTable(r) {
   tbody.innerHTML = r.chartData.map(function(d) {
     var gain       = d.invest - d.total;
     var isMile     = false;
-
     milestones.forEach(function(m) {
-      if (d.invest >= m && !passedMiles[m]) {
-        passedMiles[m] = true; isMile = true;
-      }
+      if (d.invest >= m && !passedMiles[m]) { passedMiles[m] = true; isMile = true; }
     });
 
     return '<tr class="'+(isMile?'milestone-row':'')+'">' +
@@ -496,26 +491,14 @@ function fillYearTable(r) {
 
 function calculateReverse() {
   if (!lastResult) { showToast('⚠ Bitte zuerst berechnen'); return; }
-
   var targetEl = document.getElementById('target-amount');
   var target   = parseFloat(targetEl ? targetEl.value : 0) || 1000000;
-  var r        = lastResult;
-  var rendite  = r.rendite;
-  var monthly  = r.monthly;
-  var dynamicRate = r.dynamicRate || 0;
-  var lump     = r.lump;
-
-  var val      = lump;
-  var years    = 0;
-  var maxYears = 200;
-  var currentMonthly = monthly;
-
+  var r = lastResult, rendite = r.rendite, monthly = r.monthly, dynamicRate = r.dynamicRate || 0, lump = r.lump;
+  var val = lump, years = 0, maxYears = 200, currentMonthly = monthly;
   var monthlyRate = Math.pow(1 + rendite, 1 / 12) - 1;
 
   while (val < target && years < maxYears) {
-    for(var m=0; m<12; m++) {
-      val = (val + currentMonthly) * (1 + monthlyRate);
-    }
+    for(var m=0; m<12; m++) { val = (val + currentMonthly) * (1 + monthlyRate); }
     currentMonthly = currentMonthly * (1 + dynamicRate);
     years++;
   }
@@ -526,14 +509,13 @@ function calculateReverse() {
   resultEl.style.display = 'block';
 
   if (years >= maxYears) {
-    textEl.innerHTML = 'Nicht erreichbar mit aktuellen Werten.';
+    textEl.innerHTML = 'Ziel mit diesen Werten nicht erreichbar.';
   } else {
-    var reachAge = r.ageStart + years;
     var futureYears = years - r.years;
     if (futureYears <= 0) {
-      textEl.innerHTML = '✦ Ziel von <strong>' + formatCurrency(target) + '</strong> bereits nach <strong>' + years + ' Jahren</strong> erreicht.';
+      textEl.innerHTML = '✦ Ziel bereits nach <strong>' + years + ' Jahren</strong> erreicht.';
     } else {
-      textEl.innerHTML = '✦ Ziel von <strong>' + formatCurrency(target) + '</strong> in weiteren <strong>' + futureYears + ' Jahren</strong> erreicht.';
+      textEl.innerHTML = '✦ Ziel in weiteren <strong>' + futureYears + ' Jahren</strong> erreicht.';
     }
   }
 }
@@ -546,99 +528,64 @@ function drawChart(data, maxInvest) {
   var canvas = document.getElementById('growth-chart');
   if (!canvas || !canvas.getContext) return;
   var ctx  = canvas.getContext('2d');
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  var dpr  = window.devicePixelRatio || 1;
-  var w    = canvas.parentElement.clientWidth || 300;
-  var h    = 200;
-
-  canvas.width  = w * dpr;
-  canvas.height = h * dpr;
-  canvas.style.width  = w + 'px';
-  canvas.style.height = h + 'px';
+  var dpr = window.devicePixelRatio || 1, w = canvas.parentElement.clientWidth || 300, h = 200;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
   ctx.scale(dpr, dpr);
 
-  var pL=18, pR=22, pT=18, pB=26;
-  var cW=w-pL-pR, cH=h-pT-pB;
+  var pL=18, pR=22, pT=18, pB=26, cW=w-pL-pR, cH=h-pT-pB;
   var maxV = Math.max.apply(null, data.map(function(d){return d.invest;})) || 1;
+  function xP(i) { return pL + (i/Math.max(data.length-1,1))*cW; }
+  function yP(v) { return pT + cH - (v/maxV)*cH; }
 
-  function xP(i)   { return pL + (i/Math.max(data.length-1,1))*cW; }
-  function yP(v)   { return pT + cH - (v/maxV)*cH; }
-
-  // Grid
   ctx.strokeStyle='rgba(100,70,200,.07)'; ctx.lineWidth=1;
   for(var g=0;g<=4;g++){
-    var gy=pT+(cH/4)*g;
-    ctx.beginPath();ctx.moveTo(pL,gy);ctx.lineTo(pL+cW,gy);ctx.stroke();
+    var gy=pT+(cH/4)*g; ctx.beginPath(); ctx.moveTo(pL,gy); ctx.lineTo(pL+cW,gy); ctx.stroke();
   }
 
-  // Milestones
   var milestones=[100000,500000,1000000,5000000];
   milestones.forEach(function(m){
     if(m>maxV*1.1) return;
-    var my=yP(m);
-    ctx.strokeStyle='rgba(179,136,255,.12)';ctx.lineWidth=1;
-    ctx.setLineDash([3,5]);
-    ctx.beginPath();ctx.moveTo(pL,my);ctx.lineTo(pL+cW,my);ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle='rgba(179,136,255,.4)';ctx.font='8px Space Mono,monospace';
-    ctx.textAlign='right';ctx.textBaseline='bottom';
-    ctx.fillText(formatCurrencyShort(m),pL+cW,my-2);
+    var my=yP(m); ctx.strokeStyle='rgba(179,136,255,.12)'; ctx.setLineDash([3,5]);
+    ctx.beginPath(); ctx.moveTo(pL,my); ctx.lineTo(pL+cW,my); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(179,136,255,.4)'; ctx.font='8px Space Mono,monospace';
+    ctx.textAlign='right'; ctx.fillText(formatCurrencyShort(m),pL+cW,my-2);
   });
 
-  // Fiat (Kaufkraft)
   ctx.beginPath();
-  data.forEach(function(d,i){
-    if(i===0)ctx.moveTo(xP(i),yP(d.fiat));else ctx.lineTo(xP(i),yP(d.fiat));
-  });
-  ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(255,107,107,.52)';ctx.lineWidth=1.5;
-  ctx.stroke();ctx.setLineDash([]);
+  data.forEach(function(d,i){ if(i===0)ctx.moveTo(xP(i),yP(d.fiat)); else ctx.lineTo(xP(i),yP(d.fiat)); });
+  ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(255,107,107,.52)'; ctx.stroke(); ctx.setLineDash([]);
 
-  // Invest (Kaufkraft)
   var gr=ctx.createLinearGradient(0,pT,0,pT+cH);
-  gr.addColorStop(0,'rgba(179,136,255,.26)');gr.addColorStop(1,'rgba(179,136,255,.02)');
+  gr.addColorStop(0,'rgba(179,136,255,.26)'); gr.addColorStop(1,'rgba(179,136,255,.02)');
   ctx.beginPath();
-  data.forEach(function(d,i){
-    if(i===0)ctx.moveTo(xP(i),yP(d.invest));else ctx.lineTo(xP(i),yP(d.invest));
-  });
-  ctx.lineTo(xP(data.length-1),pT+cH);ctx.lineTo(xP(0),pT+cH);ctx.closePath();
-  ctx.fillStyle=gr;ctx.fill();
+  data.forEach(function(d,i){ if(i===0)ctx.moveTo(xP(i),yP(d.invest)); else ctx.lineTo(xP(i),yP(d.invest)); });
+  ctx.lineTo(xP(data.length-1),pT+cH); ctx.lineTo(xP(0),pT+cH); ctx.fillStyle=gr; ctx.fill();
 
   ctx.beginPath();
-  data.forEach(function(d,i){
-    if(i===0)ctx.moveTo(xP(i),yP(d.invest));else ctx.lineTo(xP(i),yP(d.invest));
-  });
-  ctx.strokeStyle='rgba(179,136,255,.9)';ctx.lineWidth=2;ctx.stroke();
+  data.forEach(function(d,i){ if(i===0)ctx.moveTo(xP(i),yP(d.invest)); else ctx.lineTo(xP(i),yP(d.invest)); });
+  ctx.strokeStyle='rgba(179,136,255,.9)'; ctx.lineWidth=2; ctx.stroke();
 
-  // Milestone Dots
   data.forEach(function(d, i) {
     if (d.milestone) {
-      var mx = xP(i);
-      var my = yP(d.invest);
-      ctx.beginPath();
-      ctx.arc(mx, my, 3, 0, 2 * Math.PI);
-      ctx.fillStyle = 'var(--gold)';
-      ctx.fill();
-      ctx.strokeStyle = '#141414';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = 'var(--gold)';
-      ctx.font = '700 8px Space Mono,monospace';
+      var mx = xP(i), my = yP(d.invest);
+      ctx.beginPath(); ctx.arc(mx, my, 3, 0, 2 * Math.PI); ctx.fillStyle = 'var(--gold)'; ctx.fill();
+      ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = 'var(--gold)'; ctx.font = '700 8px Space Mono,monospace';
       ctx.textAlign = (i > data.length * 0.7) ? 'right' : 'left';
-      var textX = (i > data.length * 0.7) ? mx - 6 : mx + 6;
-      ctx.fillText(d.milestone, textX, my - 6);
+      ctx.fillText(d.milestone, (i > data.length * 0.7) ? mx - 6 : mx + 6, my - 6);
     }
   });
 }
 
 // ============================================================
-//  INSIGHTS, SHARING & EVENTS (Rest der Datei)
+//  INSIGHTS & SHARING
 // ============================================================
 
 function buildInsight(r) {
-  var s    = SCENARIOS[activeScenario].name;
-  var diff = formatCurrency(r.investVal - r.fiatVal);
+  var s = SCENARIOS[activeScenario].name, diff = formatCurrency(r.investVal - r.fiatVal);
   var base = 'Mit '+s+' hättest du '+diff+' mehr als auf dem Konto.';
   if(activeScenario==='btc') base+=' ⚠ Bitcoin ist hochspekulativ.';
   return base;
@@ -646,141 +593,91 @@ function buildInsight(r) {
 
 function generateShareImage(fmt) {
   if(!lastResult){showToast('⚠ Bitte zuerst berechnen');return;}
-  var r=lastResult,isStory=fmt==='story';
-  var W=1080,H=isStory?1920:1080;
-  var c=document.createElement('canvas');
-  c.width=W;c.height=H;
-  var ctx=c.getContext('2d');
-  ctx.fillStyle='#030014';ctx.fillRect(0,0,W,H);
-  var g1=ctx.createRadialGradient(W,0,0,W,0,600);
-  g1.addColorStop(0,'rgba(157,80,187,.35)');g1.addColorStop(1,'transparent');
-  ctx.fillStyle=g1;ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#b388ff';ctx.fillRect(0,0,W,6);ctx.fillRect(0,H-6,W,6);
+  var r=lastResult,isStory=fmt==='story', W=1080, H=isStory?1920:1080;
+  var c=document.createElement('canvas'); c.width=W; c.height=H; var ctx=c.getContext('2d');
+  ctx.fillStyle='#030014'; ctx.fillRect(0,0,W,H);
+  var g1=ctx.createRadialGradient(W,0,0,W,0,600); g1.addColorStop(0,'rgba(157,80,187,.35)'); g1.addColorStop(1,'transparent');
+  ctx.fillStyle=g1; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#b388ff'; ctx.fillRect(0,0,W,6); ctx.fillRect(0,H-6,W,6);
 
-  if(isStory) drawStoryCard(ctx,r,W,H);
-  else        drawPostCard(ctx,r,W,H);
-
-  var a=document.createElement('a');
-  a.download=isStory?'mbrn-finanz-story.png':'mbrn-finanz-post.png';
-  a.href=c.toDataURL('image/png');a.click();
+  if(isStory) drawStoryCard(ctx,r,W,H); else drawPostCard(ctx,r,W,H);
+  var a=document.createElement('a'); a.download=isStory?'mbrn-finanz-story.png':'mbrn-finanz-post.png';
+  a.href=c.toDataURL('image/png'); a.click();
 }
 
 function drawPostCard(ctx,r,W,H){
-  var cx=W/2;
-  ctx.fillStyle='rgba(179,136,255,.55)';ctx.font='500 24px monospace';
-  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  var cx=W/2; ctx.fillStyle='rgba(179,136,255,.55)'; ctx.font='500 24px monospace'; ctx.textAlign='center';
   ctx.fillText('WAS WÄRST DU HEUTE WERT? ✦ MBRN',cx,68);
-  var nTxt=formatCurrency(r.investVal),fs=180;
-  ctx.font='bold '+fs+'px sans-serif';
+  var nTxt=formatCurrency(r.investVal),fs=180; ctx.font='bold '+fs+'px sans-serif';
   while(ctx.measureText(nTxt).width>W*.82&&fs>60){fs-=8;ctx.font='bold '+fs+'px sans-serif';}
-  ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(nTxt,cx,330);
-  ctx.fillStyle='rgba(234,234,244,.4)';ctx.font='400 26px monospace';
+  ctx.fillStyle='#fff'; ctx.fillText(nTxt,cx,330);
+  ctx.fillStyle='rgba(234,234,244,.4)'; ctx.font='400 26px monospace';
   ctx.fillText('wenn du vor '+r.years+' Jahren angefangen hättest',cx,430);
   drawStats(ctx,r,W,656);
-  ctx.fillStyle='rgba(179,136,255,.4)';ctx.font='400 18px monospace';
-  ctx.fillText('✦  flase-mbrn.github.io/FinanzRechner  ✦',cx,H-22);
 }
 
 function drawStoryCard(ctx,r,W,H){
-  var cx=W/2;
-  ctx.fillStyle='rgba(179,136,255,.6)';ctx.font='500 26px monospace';
-  ctx.textAlign='center';ctx.fillText('✦ MBRN · FINANZ-RECHNER ✦',cx,100);
-  ctx.fillStyle='rgba(234,234,244,.85)';ctx.font='bold 50px sans-serif';
-  ctx.fillText('Was wärst du heute wert?',cx,200);
-  var nTxt=formatCurrency(r.investVal),fs=140;
-  ctx.font='bold '+fs+'px sans-serif';
-  ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(nTxt,cx,430);
+  var cx=W/2; ctx.fillStyle='rgba(179,136,255,.6)'; ctx.font='500 26px monospace'; ctx.textAlign='center';
+  ctx.fillText('✦ MBRN · FINANZ-RECHNER ✦',cx,100);
+  ctx.fillStyle='rgba(234,234,244,.85)'; ctx.font='bold 50px sans-serif'; ctx.fillText('Was wärst du heute wert?',cx,200);
+  var nTxt=formatCurrency(r.investVal),fs=140; ctx.font='bold '+fs+'px sans-serif';
+  ctx.fillStyle='#fff'; ctx.fillText(nTxt,cx,430);
   drawStats(ctx,r,W,822);
-  ctx.fillStyle='rgba(179,136,255,.4)';ctx.font='400 22px monospace';
-  ctx.fillText('✦  flase-mbrn.github.io  ✦',cx,H-22);
 }
 
 function drawStats(ctx,r,W,y){
   var stats=[{l:'JAHRE',v:r.years},{l:'EINGEZAHLT',v:formatCurrencyShort(r.totalInvested)},{l:'GEWINN',v:formatCurrencyShort(Math.max(0,r.gain))},{l:'FAKTOR',v:r.factor.toFixed(1)+'x'}];
   var sw=(W-120)/4;
   stats.forEach(function(s,i){
-    var sx=60+i*sw;
-    ctx.fillStyle='rgba(234,234,244,.25)';ctx.font='400 15px monospace';ctx.textAlign='center';
-    ctx.fillText(s.l,sx+sw/2,y+22);
-    ctx.fillStyle='#b388ff';ctx.font='bold 28px sans-serif';
-    ctx.fillText(s.v,sx+sw/2,y+62);
+    var sx=60+i*sw; ctx.fillStyle='rgba(234,234,244,.25)'; ctx.font='400 15px monospace'; ctx.textAlign='center';
+    ctx.fillText(s.l,sx+sw/2,y+22); ctx.fillStyle='#b388ff'; ctx.font='bold 28px sans-serif'; ctx.fillText(s.v,sx+sw/2,y+62);
   });
 }
 
-function buildShareText(){
-  if(!lastResult)return'';
-  var r=lastResult;
-  return '💸 Was wärst du heute wert? '+SCENARIOS[activeScenario].name+' über '+r.years+' Jahre → '+formatCurrency(r.investVal);
-}
+// ============================================================
+//  EVENTS & HELPERS
+// ============================================================
 
 function bindEvents(){
   document.querySelectorAll('.scenario-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
       document.querySelectorAll('.scenario-btn').forEach(function(b){b.classList.remove('active');});
-      btn.classList.add('active');
-      activeScenario=btn.getAttribute('data-scenario');
-      updateScenarioNote();
-      if(lastResult)calculate();
+      btn.classList.add('active'); activeScenario=btn.getAttribute('data-scenario');
+      updateScenarioNote(); if(lastResult)calculate();
     });
   });
 
   ['age-now','age-start','monthly','dynamic-rate','lump','inflation-input'].forEach(function(id){
-    var el=document.getElementById(id);
-    if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')calculate();});
+    var el=document.getElementById(id); if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')calculate();});
   });
 
-  var calcBtn=document.getElementById('btn-calculate');
-  if(calcBtn)calcBtn.addEventListener('click',calculate);
-
+  var calcBtn=document.getElementById('btn-calculate'); if(calcBtn)calcBtn.addEventListener('click',calculate);
   var toggleBtn=document.getElementById('btn-toggle-table');
   var tableWrap=document.getElementById('year-table-wrap');
-  if(toggleBtn&&tableWrap){
-    toggleBtn.addEventListener('click',function(){
-      var open=tableWrap.style.display==='none';
-      tableWrap.style.display=open?'block':'none';
-    });
-  }
+  if(toggleBtn&&tableWrap){ toggleBtn.addEventListener('click',function(){ tableWrap.style.display=tableWrap.style.display==='none'?'block':'none'; }); }
 
-  bind('btn-share-result',function(){
-    var o=document.getElementById('share-overlay');if(o)o.style.display='flex';
-  });
+  bind('btn-share-result',function(){ var o=document.getElementById('share-overlay');if(o)o.style.display='flex'; });
   bind('btn-save-image',  function(){generateShareImage('post');});
   bind('btn-save-story',  function(){generateShareImage('story');});
-  bind('btn-copy',        function(){
-    var url=window.location.href.split('?')[0];
-    navigator.clipboard.writeText(url);
-    setText('btn-copy','✓ Kopiert!');
-  });
+  bind('btn-copy',        function(){ var url=window.location.href.split('?')[0]; navigator.clipboard.writeText(url); setText('btn-copy','✓ Kopiert!'); });
 
-  closeModal('share-close','share-overlay');
-  closeModal('privacy-close','privacy-overlay');
+  closeModal('share-close','share-overlay'); closeModal('privacy-close','privacy-overlay');
   bind('btn-privacy',function(){var o=document.getElementById('privacy-overlay');if(o)o.style.display='flex';});
+
+  window.addEventListener('resize', function() {
+    if (lastResult && lastResult.chartData) {
+      clearTimeout(debounceTimer); debounceTimer = setTimeout(function() { drawChart(lastResult.chartData, lastResult.investVal); }, 150);
+    }
+  });
 }
 
-function setCalcLoading(on){
-  var btn=document.getElementById('btn-calculate');
-  if(!btn)return;
-  btn.textContent=on?'Berechne…':'Jetzt berechnen';
-}
-
-function updateYearsHint(){
-  var n=parseInt(getVal('age-now'),10)||0,s=parseInt(getVal('age-start'),10)||0;
-  var el=document.getElementById('years-hint');if(!el)return;
-  el.textContent=(n-s)+' Jahre Wachstum verpasst';
-}
-
-function updateScenarioNote(){
-  var notes={'sp500':'S&P 500 ø 10.2%','world-etf':'MSCI World ø 8%','btc':'Bitcoin ø 25%','savings':'Sparkonto ø 2%'};
-  var el=document.getElementById('scenario-disclaimer');if(el)el.textContent=notes[activeScenario]||'';
-}
-
+function setCalcLoading(on){ var btn=document.getElementById('btn-calculate'); if(btn)btn.textContent=on?'Berechne…':'Jetzt berechnen'; }
+function updateYearsHint(){ var n=parseInt(getVal('age-now'),10)||0,s=parseInt(getVal('age-start'),10)||0; var el=document.getElementById('years-hint'); if(el)el.textContent=(n-s)+' Jahre Wachstum verpasst'; }
+function updateScenarioNote(){ var notes={'sp500':'S&P 500 ø 10.2%','world-etf':'MSCI World ø 8%','btc':'Bitcoin ø 25%','savings':'Sparkonto ø 2%'}; var el=document.getElementById('scenario-disclaimer'); if(el)el.textContent=notes[activeScenario]||''; }
 function getVal(id){var el=document.getElementById(id);return el?el.value:'';}
 function setText(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
 function bind(id,fn){var el=document.getElementById(id);if(el)el.addEventListener('click',fn);}
-function closeModal(btnId,overlayId){
-  var btn=document.getElementById(btnId);
-  if(btn)btn.addEventListener('click',function(){var el=document.getElementById(overlayId);if(el)el.style.display='none';});
-}
+function closeModal(btnId,overlayId){ var btn=document.getElementById(btnId); if(btn)btn.addEventListener('click',function(){var el=document.getElementById(overlayId);if(el)el.style.display='none';}); }
 function formatCurrency(v){return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v);}
 function formatCurrencyShort(v){
   if(v>=1000000)return(v/1000000).toFixed(1).replace('.',',')+' Mio. €';
