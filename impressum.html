@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impressum | FinanzRechner</title>
+  <meta name="description" content="Impressum des FinanzRechners.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://flase-mbrn.github.io/FinanzRechner/impressum.html">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- BACKGROUND -->
+  <div class="bg-base"></div>
+  <div class="bg-glow bg-glow--1"></div>
+  <div class="bg-glow bg-glow--2"></div>
+  <div class="bg-grid"></div>
+
+  <!-- UNIFIED NAVIGATION -->
+  <nav class="topnav">
+    <a class="topnav-brand" href="https://flase-mbrn.github.io/MBRN/" target="_blank" rel="noopener" aria-label="MBRN Hauptwebsite">
+      <span class="topnav-logo">✦</span>
+      <span class="topnav-name">MBRN</span>
+    </a>
+    <div class="topnav-links" aria-label="Weitere Tools">
+      <a class="topnav-link" href="https://flase-mbrn.github.io/FinanzRechner/" target="_blank" rel="noopener">FinanzRechner</a>
+      <a class="topnav-link" href="https://flase-mbrn.github.io/discipline-tracker/" target="_blank" rel="noopener">Disziplin</a>
+      <a class="topnav-link" href="https://flase-mbrn.github.io/NumerologieRechner/" target="_blank" rel="noopener">Numerologie</a>
+    </div>
+    <div class="topnav-actions">
+      <a class="topnav-support" href="https://ko-fi.com/flasembrn" target="_blank" rel="noopener">☕ Support</a>
+      <button class="theme-toggle" id="themeToggle" aria-label="Dark/Light Mode wechseln">🌓</button>
+    </div>
+  </nav>
+
+  <main class="content legal-page">
+    <div class="container">
+      <div class="legal-header">
+        <h1>Impressum</h1>
+        <p class="legal-subtitle">Rechtliche Angaben gemäß § 5 TMG</p>
+      </div>
+      
+      <section class="legal-section">
+        <h2>Angaben gemäß § 5 TMG</h2>
+        <div class="legal-address">
+          <strong>Max Mustermann</strong><br>
+          Musterstraße 1<br>
+          12345 Musterstadt<br>
+          Deutschland
+        </div>
+      </section>
+
+      <section class="legal-section">
+        <h2>Kontakt</h2>
+        <p>E-Mail: <a href="mailto:kontakt@mbrn-tools.de">kontakt@mbrn-tools.de</a></p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Verantwortlich für den Inhalt</h2>
+        <p>Max Mustermann<br>(Anschrift wie oben)</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Haftungsausschluss</h2>
+        <p>Die auf dieser Website bereitgestellten Informationen und Tools dienen ausschließlich zu Informationszwecken und stellen keine Finanzberatung dar. Trotz sorgfältiger Prüfung übernehmen wir keine Haftung für die Richtigkeit, Vollständigkeit und Aktualität der bereitgestellten Daten.</p>
+      </section>
+
+      <div class="legal-back">
+        <a href="index.html" class="btn-back">← Zurück zum Rechner</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mbrn-footer">
+    <div class="mbrn-footer-inner">
+      <div class="mbrn-footer-brand">
+        <span class="mbrn-footer-brand-logo">✦</span>
+        <span>MBRN Tools</span>
+      </div>
+      <div class="mbrn-footer-links">
+        <a href="https://flase-mbrn.github.io/MBRN/" class="mbrn-footer-link" target="_blank" rel="noopener">Hauptseite</a>
+        <span class="mbrn-footer-divider">|</span>
+        <a href="impressum.html" class="mbrn-footer-link">Impressum</a>
+        <span class="mbrn-footer-divider">|</span>
+        <a href="datenschutz.html" class="mbrn-footer-link">Datenschutz</a>
+      </div>
+      <p class="mbrn-footer-copyright">© 2026 MBRN. Alle Berechnungen erfolgen lokal.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+    
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+  </script>
+</body>
+</html>

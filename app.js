@@ -133,22 +133,109 @@ function linkSlider(slId, inId, badgeId, fmt) {
   var badge = document.getElementById(badgeId);
   if (!sl || !input) return;
 
+  // CountUp animation state
+  var currentBadgeValue = parseInt(input.value) || 0;
+  var badgeAnimationId = null;
+
+  function animateBadge(from, to, duration) {
+    if (!badge) return;
+    var startTime = null;
+    if (badgeAnimationId) cancelAnimationFrame(badgeAnimationId);
+    
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var progress = Math.min((timestamp - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3); // ease-out
+      var current = Math.round(from + (to - from) * eased);
+      badge.textContent = fmt(current);
+      if (progress < 1) {
+        badgeAnimationId = requestAnimationFrame(step);
+      }
+    }
+    badgeAnimationId = requestAnimationFrame(step);
+  }
+
   sl.addEventListener('input', function() {
+    var newValue = parseInt(sl.value) || 0;
     input.value = sl.value;
-    if (badge) badge.textContent = fmt(sl.value);
+    animateBadge(currentBadgeValue, newValue, 200);
+    currentBadgeValue = newValue;
     updateYearsHint();
+    updateDynamicHint(newValue);
     scheduleRecalc();
   });
 
   input.addEventListener('input', function() {
+    var newValue = parseInt(input.value) || 0;
     sl.value = input.value;
-    if (badge) badge.textContent = fmt(input.value);
+    animateBadge(currentBadgeValue, newValue, 200);
+    currentBadgeValue = newValue;
     updateSliderFill(sl);
     updateYearsHint();
+    updateDynamicHint(newValue);
     scheduleRecalc();
   });
 
   if (badge) badge.textContent = fmt(input.value);
+}
+
+function updateDynamicHint(value) {
+  var hint = document.getElementById('dynamic-hint');
+  if (!hint) return;
+  
+  if (value === 0) {
+    hint.textContent = 'Deine Sparrate bleibt konstant';
+  } else {
+    hint.textContent = 'Deine Sparrate steigt jedes Jahr automatisch um ' + value + '%';
+  }
+}
+
+function exportScreenshot() {
+  var resultSection = document.getElementById('result-section');
+  if (!resultSection || resultSection.style.display === 'none') {
+    showToast('⚠ Bitte zuerst berechnen');
+    return;
+  }
+  
+  // Temporarily show the section fully for capture
+  var originalScroll = window.scrollY;
+  
+  // Capture only the result hero and comparison cards
+  var captureElement = document.createElement('div');
+  captureElement.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#030014;padding:40px;border-radius:20px;';
+  
+  // Clone the hero section
+  var hero = document.querySelector('.result-hero').cloneNode(true);
+  var compare = document.querySelector('.compare-grid').cloneNode(true);
+  var details = document.querySelector('.details-grid').cloneNode(true);
+  
+  captureElement.appendChild(hero);
+  captureElement.appendChild(compare);
+  captureElement.appendChild(details);
+  document.body.appendChild(captureElement);
+  
+  // Use html2canvas if available, otherwise fallback to canvas export
+  if (typeof html2canvas !== 'undefined') {
+    html2canvas(captureElement, {
+      backgroundColor: '#030014',
+      scale: 2,
+      logging: false
+    }).then(function(canvas) {
+      var link = document.createElement('a');
+      link.download = 'MBRN-Finanz-Ergebnis.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      document.body.removeChild(captureElement);
+    }).catch(function(err) {
+      console.error('Screenshot failed:', err);
+      showToast('⚠ Screenshot konnte nicht erstellt werden');
+      document.body.removeChild(captureElement);
+    });
+  } else {
+    // Fallback: use the existing canvas generation
+    generateShareImage('post');
+    document.body.removeChild(captureElement);
+  }
 }
 
 function updateSliderFill(sl) {
@@ -170,168 +257,179 @@ function scheduleRecalc() {
 // ============================================================
 
 function calculate() {
-  var ageNow = parseInt(getVal('age-now'), 10) || 0;
-  var ageStart = parseInt(getVal('age-start'), 10) || 0;
-  var monthly = parseFloat(getVal('monthly')) || 0;
-  var dynamicRate = parseFloat(getVal('dynamic-rate')) / 100 || 0;
-  var lump = parseFloat(getVal('lump')) || 0;
+    // 1. Inputs abgreifen (Sicherstellen, dass es Zahlen sind)
+    const ageNow = parseFloat(getVal('age-now')) || 0;
+    const ageStart = parseFloat(getVal('age-start')) || 0;
+    const runtimeYears = ageNow - ageStart;
 
-  // Input Sanitization
-  if (ageNow < 0) ageNow = 0;
-  if (ageNow > 120) ageNow = 120;
-  if (ageStart < 0) ageStart = 0;
-  if (ageStart > 120) ageStart = 120;
-  if (monthly < 0) monthly = 0;
-  if (monthly > 10000000) monthly = 10000000;
-  if (lump < 0) lump = 0;
-  if (lump > 1000000000) lump = 1000000000;
-  if (dynamicRate < 0) dynamicRate = 0;
-  if (dynamicRate > 1) dynamicRate = 1;
-  if (inflation < -0.1) inflation = -0.1;
-  if (inflation > 1) inflation = 1;
-
-  hideError('err-age');
-
-  if (ageStart >= ageNow) {
-    showError('err-age', 'Startalter muss kleiner als aktuelles Alter sein');
-    showToast('⚠ Startalter muss kleiner als aktuelles Alter sein');
-    return;
-  }
-
-  if (monthly <= 0 && lump <= 0) {
-    showToast('⚠ Bitte einen Betrag eingeben');
-    return;
-  }
-
-  var years = ageNow - ageStart;
-  var rendite = SCENARIOS[activeScenario].rate;
-
-  // Begrenze extreme Renditen für mathematische Stabilität
-  if (rendite > 0.30) rendite = 0.30;
-
-  setCalcLoading(true);
-
-  setTimeout(function () {
-    var investVal = lump;           // nominaler Endwert
-    var totalInvested = lump;       // nominal eingezahlt
-    var totalMonths = years * 12;
-    var currentMonthly = monthly;
-
-    // Monatliche Rendite berechnen: (1 + r)^(1/12) - 1
-    var monthlyRate = Math.pow(1 + rendite, 1 / 12) - 1;
-
-    // Startwert für Chart
-    var chartData = [{
-      year: 0,
-      fiat: Math.round(lump),
-      invest: Math.round(lump / Math.pow(1 + inflation, 0)),
-      total: Math.round(lump),
-      milestone: null
-    }];
-
-    var mieteGedeckt = false;
-    var zinseszins = false;
-
-    for (var m = 1; m <= totalMonths; m++) {
-      var startInvestVal = investVal;
-
-      // Monatliche Einzahlung + Verzinsung
-      investVal = (investVal + currentMonthly) * (1 + monthlyRate);
-      totalInvested += currentMonthly;
-
-      if (m % 12 === 0) {
-        var currentYear = m / 12;
-
-        // Inflationsbereinigung
-        var fiatReal = totalInvested / Math.pow(1 + inflation, currentYear);
-        var investReal = investVal / Math.pow(1 + inflation, currentYear);
-
-        var milestone = null;
-
-        // Meilenstein: Miete gedeckt (4% Entnahme > 1000€/Monat)
-        if (!mieteGedeckt && (investReal * 0.04) / 12 > 1000) {
-          milestone = 'Miete gedeckt';
-          mieteGedeckt = true;
-        }
-
-        // Meilenstein: Zinseszinseffekt-Überholung
-        var interestThisMonth = (startInvestVal + currentMonthly) * monthlyRate;
-        if (!zinseszins && interestThisMonth > currentMonthly && currentMonthly > 0) {
-          milestone = (milestone ? milestone + ' & ' : '') + 'Zinseszins > Sparrate';
-          zinseszins = true;
-        }
-
-        chartData.push({
-          year: currentYear,
-          fiat: Math.round(fiatReal),
-          invest: Math.round(investReal),
-          total: Math.round(totalInvested),
-          milestone: milestone
-        });
-
-        // Jährliche Erhöhung der Sparrate
-        currentMonthly = currentMonthly * (1 + dynamicRate);
-      }
+    const monthlyContribution = parseFloat(getVal('monthly')) || 0;
+    const yearlyDynamic = parseFloat(getVal('dynamic-rate')) / 100 || 0;
+    const startCapital = parseFloat(getVal('lump')) || 0;
+    
+    // Szenario-Daten
+    const scenario = SCENARIOS[activeScenario];
+    const returnRatePA = scenario.rate;
+    const inflationRatePA = inflation; // Bereits als Dezimal gesetzt
+    
+    // Input Sanitization
+    if (ageNow < 0 || ageNow > 120 || ageStart < 0 || ageStart > 120 || runtimeYears <= 0) {
+        showError('err-age', 'Startalter muss kleiner als aktuelles Alter sein');
+        showToast('⚠ Startalter muss kleiner als aktuelles Alter sein');
+        return;
+    }
+    
+    if (monthlyContribution <= 0 && startCapital <= 0) {
+        showToast('⚠ Bitte einen Betrag eingeben');
+        return;
     }
 
-    // Inflationsbereinigte Endwerte
-    var fiatVal = totalInvested / Math.pow(1 + inflation, years);
-    var realValue = investVal / Math.pow(1 + inflation, years);
-    var realGain = realValue - fiatVal;
-    var realFactor = fiatVal > 0 ? realValue / fiatVal : 0;
+    setCalcLoading(true);
 
-    var rawGain = investVal - totalInvested;
-    var taxable = Math.max(0, rawGain - FREIBETRAG);
+    setTimeout(function () {
+        // Steuer-Konstanten (Effektiver Satz für ETFs in DE: ~18,46%)
+        const taxRate = 0.1846; 
 
-    // Steuerlogik basierend auf Asset-Klasse
-    var afterTax = investVal;
-    var effectiveTaxRate = 0;
-    var taxType = SCENARIOS[activeScenario].type;
+        // 2. Initialisierung der Rechen-Variablen
+        let totalInvested = startCapital;
+        let nominalEndValue = startCapital;
+        let currentMonthlyRate = monthlyContribution;
+        
+        // Array für den Chart
+        const yearlyData = [];
+        
+        var mieteGedeckt = false;
+        var zinseszins = false;
 
-    if (taxType === 'etf') {
-      effectiveTaxRate = TAX_RATE_BASE * 0.7;
-      afterTax = investVal - (taxable * effectiveTaxRate);
-    } else if (taxType === 'crypto') {
-      if (years > 1) {
-        effectiveTaxRate = 0;
-        afterTax = investVal;
-      } else {
-        effectiveTaxRate = TAX_RATE_BASE;
-        afterTax = investVal - (taxable * effectiveTaxRate);
-      }
-    } else {
-      effectiveTaxRate = TAX_RATE_BASE;
-      afterTax = investVal - (taxable * effectiveTaxRate);
-    }
+        // Monatliche Rate für Zinseszins (exponentiell, nicht linear!)
+        const monthlyRate = Math.pow(1 + returnRatePA, 1 / 12) - 1;
 
-    var factor = totalInvested > 0 ? investVal / totalInvested : 0;
+        // 3. Berechnungsschleife (Monatlich für höchste Präzision)
+        for (let year = 1; year <= runtimeYears; year++) {
+            let yearlyProfit = 0;
+            let yearlyInput = 0;
+            var milestone = null;
 
-    lastResult = {
-      fiatVal: fiatVal,
-      realValue: realValue,
-      realGain: realGain,
-      realFactor: realFactor,
-      investVal: investVal,
-      afterTax: afterTax,
-      totalInvested: totalInvested,
-      gain: rawGain,
-      factor: factor,
-      years: years,
-      monthly: monthly,
-      dynamicRate: dynamicRate,
-      lump: lump,
-      chartData: chartData,
-      ageNow: ageNow,
-      ageStart: ageStart,
-      rendite: rendite,
-      taxType: taxType,
-      effectiveTaxRate: effectiveTaxRate,
-      inflation: inflation
-    };
+            for (let month = 1; month <= 12; month++) {
+                // 1. Zinsen auf das vorhandene Kapital (Zinseszins!)
+                const monthStartValue = nominalEndValue;
+                nominalEndValue *= (1 + monthlyRate);
+                const monthlyProfit = nominalEndValue - monthStartValue;
+                yearlyProfit += monthlyProfit;
+                
+                // 2. Einzahlung am Monatsende
+                nominalEndValue += currentMonthlyRate;
+                totalInvested += currentMonthlyRate;
+                yearlyInput += currentMonthlyRate;
+                
+                // Meilenstein-Check: Zinseszins > Sparrate
+                if (month === 12 && !zinseszins) {
+                    var interestThisYear = yearlyProfit;
+                    if (interestThisYear > (currentMonthlyRate * 12) && currentMonthlyRate > 0) {
+                        milestone = (milestone ? milestone + ' & ' : '') + 'Zinseszins > Sparrate';
+                        zinseszins = true;
+                    }
+                }
+            }
+            
+            // Meilenstein: Miete gedeckt (4% Entnahme > 1000€/Monat)
+            var investReal = nominalEndValue / Math.pow(1 + inflationRatePA, year);
+            if (!mieteGedeckt && (investReal * 0.04) / 12 > 1000) {
+                milestone = (milestone ? milestone + ' & ' : '') + 'Miete gedeckt';
+                mieteGedeckt = true;
+            }
 
-    setCalcLoading(false);
-    showResult(lastResult);
-  }, 160);
+            // Dynamik am Jahresende anwenden
+            currentMonthlyRate *= (1 + yearlyDynamic);
+
+            // Daten für Chart speichern (angepasst an bestehendes Format)
+            yearlyData.push({
+                year: year,
+                age: ageStart + year,
+                fiat: Math.round(startCapital / Math.pow(1 + inflationRatePA, year)), // Wird später korrigiert
+                invest: Math.round(nominalEndValue / Math.pow(1 + inflationRatePA, year)),
+                total: Math.round(totalInvested),
+                milestone: milestone,
+                nominalValue: nominalEndValue
+            });
+        }
+
+        // 4. Abschluss-Kalkulationen (Mathematik-Fixes)
+        
+        // A. Gewinn & Steuern (Nur auf den tatsächlichen Zuwachs!)
+        const totalProfit = Math.max(0, nominalEndValue - totalInvested);
+        
+        // Korrekte Steuer-Logik: Freibetrag berücksichtigen + Teilfreistellung
+        const taxableProfit = Math.max(0, totalProfit - FREIBETRAG);
+        const effectiveTaxRate = scenario.type === 'savings' ? taxRate : taxRate * 0.7; // 30% Teilfreistellung für ETFs/Crypto
+        const taxAmount = taxableProfit * effectiveTaxRate;
+        const netEndValue = nominalEndValue - taxAmount;
+
+        // B. Kaufkraft (Inflation über die volle Laufzeit diskontiert)
+        // Formel: Nominalwert / (1 + Inflation)^Jahre
+        const purchasingPower = netEndValue / Math.pow(1 + inflationRatePA, runtimeYears);
+        const purchasingPowerNominal = nominalEndValue / Math.pow(1 + inflationRatePA, runtimeYears);
+
+        // C. Real-Konto (Was wäre das Geld "unter dem Kissen" wert?)
+        // Jede Einzahlung verliert über die Restlaufzeit an Wert
+        let cashAccountValue = startCapital / Math.pow(1 + inflationRatePA, runtimeYears);
+        let tempMonthly = monthlyContribution;
+        for (let y = 0; y < runtimeYears; y++) {
+            const yearsRemaining = runtimeYears - y;
+            cashAccountValue += (tempMonthly * 12) / Math.pow(1 + inflationRatePA, yearsRemaining);
+            tempMonthly *= (1 + yearlyDynamic);
+        }
+        
+        // Korrekte Chart-Daten berechnen
+        for (var i = 0; i < yearlyData.length; i++) {
+            var yearData = yearlyData[i];
+            var cumulativeDiscounted = startCapital / Math.pow(1 + inflationRatePA, yearData.year);
+            
+            tempMonthly = monthlyContribution;
+            for (var yy = 1; yy <= yearData.year; yy++) {
+                var remainingY = yearData.year - yy;
+                var yearlyContrib = tempMonthly * 12;
+                cumulativeDiscounted += yearlyContrib / Math.pow(1 + inflationRatePA, remainingY);
+                tempMonthly = tempMonthly * (1 + yearlyDynamic);
+            }
+            
+            yearData.fiat = Math.round(cumulativeDiscounted);
+        }
+
+        // 5. Ergebnisse an das UI übergeben
+        lastResult = {
+            nominalEndValue: nominalEndValue,
+            netEndValue: netEndValue,
+            totalInvested: totalInvested,
+            totalProfit: totalProfit,
+            taxAmount: taxAmount,
+            purchasingPower: purchasingPower,
+            purchasingPowerNominal: purchasingPowerNominal,
+            cashAccountValue: cashAccountValue,
+            factor: totalInvested > 0 ? nominalEndValue / totalInvested : 0,
+            realFactor: cashAccountValue > 0 ? purchasingPowerNominal / cashAccountValue : 0,
+            realGain: purchasingPowerNominal - cashAccountValue,
+            fiatVal: cashAccountValue,
+            realValue: purchasingPowerNominal,
+            investVal: nominalEndValue,
+            afterTax: netEndValue,
+            gain: totalProfit,
+            years: runtimeYears,
+            monthly: monthlyContribution,
+            dynamicRate: yearlyDynamic,
+            lump: startCapital,
+            chartData: yearlyData,
+            ageNow: ageNow,
+            ageStart: ageStart,
+            rendite: returnRatePA,
+            taxType: scenario.type,
+            effectiveTaxRate: taxRate,
+            inflation: inflationRatePA,
+            purchasingPowerNet: purchasingPower
+        };
+
+        setCalcLoading(false);
+        showResult(lastResult);
+    }, 160);
 }
 
 // ============================================================
@@ -343,9 +441,19 @@ function showResult(r) {
   if (!section) return;
   section.style.display = 'flex';
 
-  // Hero mit animiertem Counter: inflationsbereinigter Hauptwert
+  // Hero mit animiertem Counter: inflationsbereinigter Hauptwert (Kaufkraft des Endwerts)
   animateCounter('hook-number', Math.round(r.realValue));
   setText('hook-sub', 'Nominale Endsumme: ' + formatCurrency(r.investVal) + '  ·  heutige Kaufkraft: ' + formatCurrency(r.realValue));
+
+  // Kaufkraft Info anzeigen
+  var kaufkraftInfo = document.getElementById('kaufkraft-info');
+  if (kaufkraftInfo) {
+    kaufkraftInfo.style.display = 'flex';
+    var kaufkraftText = kaufkraftInfo.querySelector('.kaufkraft-text');
+    if (kaufkraftText) {
+      kaufkraftText.textContent = 'Deine ' + formatCurrency(r.investVal) + ' im Jahr ' + (r.ageNow + 2026 - r.ageStart) + ' haben die Kaufkraft von ca. ' + formatCurrency(r.realValue) + ' heute.';
+    }
+  }
 
   // Steuer-Hint
   var taxHint = document.getElementById('tax-hint');
@@ -365,40 +473,65 @@ function showResult(r) {
     }
   }
 
-  // Kontext-Vergleich auf Basis der realen Kaufkraft
-  renderContextBox(r.realValue);
+  // Kontext-Vergleich auf Basis der KAUFKRAFT (nicht Netto-Endwert)
+  // Ehrliche Darstellung: Was kann ich mir HEUTE für das Geld kaufen?
+  renderContextBox(r.purchasingPower, r.purchasingPower);
 
-  // Vergleich
+  // Vergleich: Kaufkraft heute vs. Inflationsbereinigte Einzahlungen
   setText('val-fiat', formatCurrency(r.fiatVal));
   setText('val-invest', formatCurrency(r.realValue));
   setText('invest-label', SCENARIOS[activeScenario].name + ' · heutige Kaufkraft');
 
-  // Details: real statt nominal
+  // Details: KORRIGIERT - zeige NOMINALE Werte für Eingezahlt und realen Gewinn
   setText('detail-years', r.years);
-  setText('detail-invested', formatCurrencyShort(r.totalInvested));
-  setText('detail-gain', formatCurrencyShort(Math.max(0, r.realGain)));
+  setText('detail-invested', formatCurrencyShort(r.totalInvested));  // NOMINAL eingezahlt
+  setText('detail-gain', formatCurrencyShort(Math.max(0, r.realGain)));  // REALER Gewinn (Kaufkraft)
   setText('detail-factor', r.realFactor.toFixed(1) + 'x');
 
-  // Wow-Meter
+  // Wow-Meter mit dynamischem Performance Score
+  // 0% = Inflation frisst alles (realer Gewinn = 0)
+  // 100% = S&P 500 Performance (~10% p.a.)
+  // >100% = Besser als S&P 500 (z.B. Krypto)
   var fill = document.getElementById('wow-fill');
+  var wowLabel = document.getElementById('wow-label');
 
-  if (r.realValue < r.totalInvested * 1.05) {
-    if (fill) {
-      fill.style.width = '20%';
-      fill.style.background = 'var(--gold)';
-      fill.style.boxShadow = '0 0 10px var(--gold)';
-    }
-    setText('wow-label', 'Inflationsfalle ⚠️');
+  // Annualisierte Rendite berechnen
+  var annualReturn = Math.pow(r.nominalEndValue / r.totalInvested, 1 / r.years) - 1;
+  var sp500Benchmark = 0.10; // S&P 500 ~10%
+  var inflationRate = r.inflation;
+
+  // Performance Score: 0% = Inflation, 100% = S&P 500
+  var performanceScore = ((annualReturn - inflationRate) / (sp500Benchmark - inflationRate)) * 100;
+  performanceScore = Math.max(0, Math.min(100, performanceScore)); // Clamp 0% - 100% (Maximum)
+
+  // Dynamische Farben basierend auf Score
+  var scoreColor, scoreText, scoreGlow;
+  if (performanceScore >= 80) {
+    // Neon-Grün: Finanzielle Freiheit erreicht
+    scoreColor = '#00ff88';
+    scoreGlow = '0 0 20px #00ff88';
+    scoreText = 'Finanzielle Freiheit ✦ (' + Math.round(performanceScore) + '%)';
+  } else if (performanceScore >= 40) {
+    // Gold/Gelb: Solider Vermögensaufbau
+    scoreColor = '#ffd700';
+    scoreGlow = '0 0 15px #ffd700';
+    scoreText = 'Solider Vermögensaufbau (' + Math.round(performanceScore) + '%)';
   } else {
-    var pct = Math.min(100, Math.round(((r.realFactor - 1) / 19) * 100));
-    var labels = ['Besser als nichts', 'Solide', 'Gut', 'Sehr gut', 'Exzellent', 'Außergewöhnlich'];
-    if (fill) {
-      fill.style.width = pct + '%';
-      fill.style.background = 'var(--primary)';
-      fill.style.boxShadow = '0 0 10px var(--primary)';
-    }
-    setText('wow-label', labels[Math.min(labels.length - 1, Math.floor(pct / 17))] + ' (' + pct + '%)');
+    // Soft-Rot: Inflation frisst dein Erspartes
+    scoreColor = '#ff6b6b';
+    scoreGlow = '0 0 10px #ff6b6b';
+    scoreText = 'Inflation frisst dein Erspartes ⚠️ (' + Math.round(performanceScore) + '%)';
   }
+
+  // Balken-Breite (max 100%)
+  var wowPct = Math.min(100, Math.round(performanceScore));
+
+  if (fill) {
+    fill.style.width = wowPct + '%';
+    fill.style.background = scoreColor;
+    fill.style.boxShadow = scoreGlow;
+  }
+  setText('wow-label', scoreText);
 
   // Insight
   setText('insight-text', buildInsight(r));
@@ -453,20 +586,25 @@ function animateCounter(id, targetVal) {
 //  KONTEXT-VERGLEICH
 // ============================================================
 
-function renderContextBox(val) {
+function renderContextBox(val, netEndValue) {
   var box = document.getElementById('context-box');
   var grid = document.getElementById('context-grid');
   if (!box || !grid) return;
 
+  // Aktuelle Preise für Vergleichs-Karten
   var avgSalaryDE = 45000;
   var avgRentDE = 12000;
   var carAvg = 35000;
+  var worldTrip = 5000;
+
+  // Nutze netEndValue (nach Steuern) für realistischere Vergleiche
+  var compareValue = netEndValue || val;
 
   var items = [
-    { emoji: '💰', label: 'Jahresgehälter (DE)', val: Math.round(val / avgSalaryDE * 10) / 10 },
-    { emoji: '🏠', label: 'Jahre Miete (ø DE)', val: Math.round(val / avgRentDE * 10) / 10 },
-    { emoji: '🚗', label: 'Durchschnittliche Neuwagen', val: Math.round(val / carAvg) },
-    { emoji: '✈️', label: 'Weltreisen (ca. 5.000€)', val: Math.round(val / 5000) },
+    { emoji: '💰', label: 'Jahresgehälter (DE)', val: Math.round(compareValue / avgSalaryDE * 10) / 10, price: avgSalaryDE },
+    { emoji: '🏠', label: 'Jahre Miete (ø DE)', val: Math.round(compareValue / avgRentDE * 10) / 10, price: avgRentDE },
+    { emoji: '🚗', label: 'Durchschnittliche Neuwagen', val: Math.round(compareValue / carAvg), price: carAvg },
+    { emoji: '✈️', label: 'Weltreisen (ca. 5.000€)', val: Math.round(compareValue / worldTrip), price: worldTrip },
   ];
 
   grid.innerHTML = items.map(function(item) {
@@ -475,6 +613,7 @@ function renderContextBox(val) {
       '<div class="context-text">' +
         '<strong>' + formatNum(item.val) + '</strong>' +
         item.label +
+        '<small style="opacity:0.6;display:block">' + formatCurrency(item.price) + '</small>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -1206,3 +1345,25 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
   if (fill) ctx.fill();
   if (stroke) ctx.stroke();
 }
+
+/* =====================================================
+   THEME TOGGLE
+   ===================================================== */
+function initTheme() {
+  const saved = localStorage.getItem('nTheme') || 'dark';
+  const btn   = document.getElementById('themeToggle');
+  document.documentElement.setAttribute('data-theme', saved);
+  if (btn) btn.textContent = saved === 'dark' ? '☀' : '☾';
+  btn?.addEventListener('click', () => {
+    const cur  = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('nTheme', next);
+    btn.textContent = next === 'dark' ? '☀' : '☾';
+    btn.setAttribute('aria-label', next === 'dark' ? 'Light Mode' : 'Dark Mode');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+});

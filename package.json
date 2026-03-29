@@ -1,0 +1,30 @@
+{
+  "name": "finanzrechner",
+  "version": "1.0.0",
+  "description": "MBRN Finanz-Rechner - Zinseszins & Inflation",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "jsdom": "^23.0.0",
+    "@playwright/test": "^1.40.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  },
+  "keywords": [
+    "finanzen",
+    "zinseszins",
+    "investment",
+    "inflation",
+    "calculator"
+  ],
+  "author": "Erik Klauß",
+  "license": "MIT"
+}

@@ -4,18 +4,68 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MBRN Finanz-Rechner | Zinseszins & Inflation</title>
+  <meta name="description" content="Berechne den wahren Wert deiner Zeit. Zinseszins vs. Inflation. Investitionsszenarien mit S&P 500, Bitcoin und Sparkonto. 100% lokal im Browser." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.coingecko.com;">
+  <meta name="theme-color" content="#8b5cf6">
+  <meta property="og:title" content="MBRN Finanz-Rechner | Zinseszins & Inflation" />
+  <meta property="og:description" content="Berechne den wahren Wert deiner Zeit. Investitionsszenarien mit Inflation & Steuern." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://flase-mbrn.github.io/FinanzRechner/" />
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   
-  <!-- Fonts -->
+  <!-- Resource Hints -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
   
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Preload Critical Fonts -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" /></noscript>
+  
+  <!-- MBRN Design System -->
+  <link rel="stylesheet" href="../shared/styles/mbrn-theme.css" />
+  <link rel="stylesheet" href="../shared/styles/mbrn-finanz.css" />
   
   <link rel="stylesheet" href="style.css" />
+  
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('[PWA] Service Worker registered'))
+        .catch(err => console.log('[PWA] Service Worker registration failed'));
+    }
+  </script>
+  <style>
+    .hero-kaufkraft-info {
+      font-size: 11px;
+      color: var(--text-dim);
+      opacity: 0.7;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: center;
+    }
+    .hero-kaufkraft-info .info-icon {
+      cursor: help;
+      font-size: 14px;
+    }
+    .slider-animating {
+      transition: all 0.3s ease;
+    }
+    .count-up {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+  <!-- html2canvas for screenshot export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
+
+  <!-- MBRN Shared Navigation -->
+  <script src="../shared/navigation.js"></script>
 
   <!-- BACKGROUND -->
   <div class="bg-base"></div>
@@ -25,18 +75,6 @@
 
   <!-- TOAST NOTIFICATION -->
   <div class="toast" id="toast"></div>
-
-  <!-- TOPNAV -->
-  <nav class="topnav">
-    <div class="topnav-brand">
-      <span class="topnav-logo">✦</span>
-      <span class="topnav-name">MBRN</span>
-    </div>
-    <div class="topnav-links">
-      <span class="topnav-dot">●</span>
-      <a href="https://flase-mbrn.github.io/discipline-tracker" class="topnav-link" target="_blank">Disziplin Tracker</a>
-    </div>
-  </nav>
 
   <!-- MAIN CONTAINER -->
   <div class="container">
@@ -110,6 +148,7 @@
         </div>
         <input type="range" class="slider" id="slider-dynamic" min="0" max="10" step="1" value="0" />
         <input type="number" class="input-field" id="dynamic-rate" value="0" style="display:none" />
+        <span class="input-hint" id="dynamic-hint">Deine Sparrate bleibt konstant</span>
       </div>
 
       <!-- Einmalzahlung -->
@@ -165,7 +204,7 @@
 
       <button class="btn-calculate" id="btn-calculate">
         <span class="btn-calc-icon" id="calc-icon">✦</span>
-        <span id="calc-text">Jetzt berechnen</span>
+        <span id="calc-text">Berechnen</span>
       </button>
     </section>
 
@@ -177,6 +216,10 @@
         <p class="hero-label">Dein potenzielles Vermögen</p>
         <div class="hero-number" id="hook-number">—</div>
         <p class="hero-sub" id="hook-sub">Entspricht einer heutigen Kaufkraft von ca. —</p>
+        <p class="hero-kaufkraft-info" id="kaufkraft-info" style="display:none">
+          <span class="info-icon" title="Inflation halbiert den Wert deines Geldes ca. alle 10-15 Jahre (bei 5-7%). Diese Zahl zeigt dir, was du dir im Jahr 2026 für die Endsumme kaufen könntest.">ℹ️</span>
+          <span class="kaufkraft-text"></span>
+        </p>
         <div class="tax-hint" id="tax-hint" style="display:none">
           <span>ℹ</span>
           <span id="tax-after">—</span>
@@ -315,80 +358,71 @@
 
     </section>
 
-    <!-- SUPPORT -->
-    <section class="support-section">
-      <a class="btn-kofi" href="https://ko-fi.com/flasembrn" target="_blank" rel="noopener">☕ Dieses Tool unterstützen</a>
-    </section>
+<!-- SUPPORT -->
+<section class="support-section">
+  <a class="btn-kofi" href="https://ko-fi.com/flasembrn" target="_blank" rel="noopener">☕ Dieses Tool unterstützen</a>
+</section>
 
-    <!-- FOOTER / IMPRESSUM -->
-    <footer class="footer">
-      <p class="footer-note">Lokal berechnet · Keine Datenspeicherung · Kein Tracking · Keine Werbung</p>
-      <div class="footer-links">
-        <button class="footer-link" id="btn-privacy">Datenschutz & Impressum</button>
-        <span class="footer-sep">·</span>
-        <a class="footer-link" href="https://flase-mbrn.github.io/discipline-tracker" target="_blank">Disziplin Tracker</a>
-        <span class="footer-sep">·</span>
-        <span class="footer-version">v1.3</span>
-      </div>
-    </footer>
-
-  </div><!-- /container -->
-
-
-  <!-- ===== MODALS ===== -->
-
-  <!-- SHARE MODAL -->
-  <div class="modal-overlay" id="share-overlay" style="display:none">
-    <div class="modal">
-      <button class="modal-close" id="share-close">✕</button>
-      <p class="modal-eyebrow">✦ Ergebnis teilen</p>
-      <div class="share-preview">
-        <div class="share-preview-inner">
-          <p class="sp-label">WAS WÄRST DU HEUTE WERT? ✦ MBRN</p>
-          <div class="sp-number" id="sp-number">—</div>
-          <p class="sp-sub" id="sp-sub">wenn du früher investiert hättest</p>
-          <div class="sp-compare">
-            <div class="sp-col sp-col--bad">
-              <span class="sp-col-label">Fiat</span>
-              <span class="sp-col-val" id="sp-fiat">—</span>
-            </div>
-            <div class="sp-col sp-col--good">
-              <span class="sp-col-label" id="sp-inv-label">Investiert</span>
-              <span class="sp-col-val sp-col-val--good" id="sp-invest">—</span>
-            </div>
-          </div>
-          <p class="sp-url">flase-mbrn.github.io/FinanzRechner</p>
-        </div>
-      </div>
-      <div class="social-grid">
-        <button class="btn-social btn-wa"  id="btn-wa">💬 WhatsApp</button>
-        <button class="btn-social btn-tw"  id="btn-tw">𝕏 Twitter</button>
-        <button class="btn-social btn-cp"  id="btn-copy">🔗 Link kopieren</button>
-        <button class="btn-social btn-dl"  id="btn-dl">⬇ Post (1:1)</button>
-      </div>
-      <button class="btn-social btn-story full-width" id="btn-story-modal">📱 Story (9:16) für Instagram & WhatsApp</button>
-      <p class="share-tags">#Investieren #FinanzielleFreiheit #MBRN #Vermögensaufbau</p>
+<!-- DATENSCHUTZ / IMPRESSUM MODAL (Unified MBRN) -->
+<div class="mbrn-legal-modal-overlay" id="legal-modal">
+  <div class="mbrn-legal-modal">
+    <div class="mbrn-legal-modal-header">
+      <h3 class="mbrn-legal-modal-title">Impressum & Datenschutz</h3>
+      <button class="mbrn-legal-modal-close" onclick="closeLegalModal()" type="button">✕</button>
+    </div>
+    <div class="mbrn-legal-modal-content">
+      <p><strong>Keine Datenspeicherung</strong><br>Alle Berechnungen erfolgen vollständig lokal in deinem Browser (JavaScript). Es werden keine Daten an Server übertragen.</p>
+      
+      <p><strong>Externe Dienste</strong><br>Live-Kurse werden von der öffentlichen CoinGecko API abgefragt. Dabei wird deine IP-Adresse übertragen.</p>
+      
+      <p><strong>Impressum (Angaben gemäß § 5 TMG)</strong><br>Max Mustermann<br>Musterstraße 1<br>12345 Musterstadt<br>Kontakt: kontakt@mbrn-tools.de</p>
+      
+      <p><strong>Datenschutz (DSGVO)</strong><br>Diese Webseite nutzt Google Fonts. Es findet kein Tracking statt. Alle Berechnungen erfolgen lokal im Browser.</p>
+      
+      <p><strong>Keine Finanzberatung</strong><br>Dieses Tool dient ausschließlich der illustrativen Darstellung. Es stellt keine Anlageberatung dar.</p>
+      
+      <p class="privacy-small">© 2026 MBRN Tools · Built to be used.</p>
     </div>
   </div>
+</div>
 
-  <!-- DATENSCHUTZ / IMPRESSUM MODAL -->
-  <div class="modal-overlay" id="privacy-overlay" style="display:none">
-    <div class="modal">
-      <button class="modal-close" id="privacy-close">✕</button>
-      <p class="modal-eyebrow">✦ Rechtliches</p>
-      <h3 class="modal-title">Datenschutz & Impressum</h3>
-      <div class="privacy-text">
-        <p><strong>Keine Datenspeicherung</strong><br/>Alle Berechnungen erfolgen vollständig lokal in deinem Browser (JavaScript). Es werden keine Daten an Server übertragen, keine Cookies gesetzt und kein Tracking durchgeführt.</p>
-        <p><strong>Externe Dienste</strong><br/>Live-Kurse werden von der öffentlichen CoinGecko API (coingecko.com) abgefragt. Dabei wird deine IP-Adresse an CoinGecko übertragen. Google Fonts werden von fonts.googleapis.com geladen.</p>
-        <p><strong>Hinweis zur Besteuerung</strong><br/>In Deutschland gilt auf Kapitalerträge die Abgeltungssteuer von 25% + Soli (≈ 26,375%). Der Sparerpauschbetrag beträgt 1.000 € (2024). Dieses Tool zeigt vereinfachte Schätzungen — individuelle Steuerberatung empfohlen.</p>
-        <p><strong>Keine Finanzberatung</strong><br/>Dieses Tool dient ausschließlich der illustrativen Darstellung mathematischer Zusammenhänge. Es stellt keine Anlageberatung im Sinne des WpHG dar. Vergangene Performance ist keine Garantie für zukünftige Ergebnisse.</p>
-        <p><strong>Impressum (Angaben gemäß § 5 TMG)</strong><br/>Max Mustermann<br/>Musterstraße 1<br/>12345 Musterstadt<br/>Kontakt: kontakt@mbrn-tools.de</p>
-        <p><strong>Datenschutzerklärung (DSGVO)</strong><br/>Diese Webseite nutzt Google Fonts (lokal eingebunden oder via Google Server, wobei die IP-Adresse übertragen wird) sowie die CoinGecko API zur Preisabfrage (IP-Übertragung an CoinGecko). Es findet kein weiteres Tracking (z.B. Google Analytics) statt. Alle Berechnungen erfolgen lokal im Browser.</p>
-        <p class="privacy-small">Zuletzt aktualisiert: 2026 · v1.4 · Affiliate-Links sind als solche gekennzeichnet.</p>
-      </div>
+<!-- ===== FOOTER ===== -->
+<footer class="mbrn-footer">
+  <div class="mbrn-footer-inner">
+    <div class="mbrn-footer-brand">
+      <span class="mbrn-footer-brand-logo">✦</span>
+      <span>MBRN Tools</span>
     </div>
+    
+    <div class="mbrn-footer-links">
+      <a href="https://flase-mbrn.github.io/MBRN/" class="mbrn-footer-link" target="_blank" rel="noopener">Hauptseite</a>
+      <span class="mbrn-footer-divider">|</span>
+      <a href="impressum.html" class="mbrn-footer-link">Impressum</a>
+      <span class="mbrn-footer-divider">|</span>
+      <a href="datenschutz.html" class="mbrn-footer-link">Datenschutz</a>
+    </div>
+    
+    <div class="mbrn-footer-copyright">© 2026 MBRN. Built to be used.</div>
   </div>
+</footer>
 
-  <script src="app.js"></script>
+<script>
+  function openLegalModal() {
+    document.getElementById('legal-modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLegalModal() {
+    document.getElementById('legal-modal').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('legal-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeLegalModal();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLegalModal();
+  });
+</script>
+
+<script src="app.js"></script>
 </body>
 </html>

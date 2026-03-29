@@ -1,0 +1,40 @@
+{
+  "id": "/FinanzRechner/",
+  "name": "MBRN Finanz-Rechner",
+  "short_name": "Finanz",
+  "start_url": "/FinanzRechner/",
+  "scope": "/FinanzRechner/",
+  "display": "standalone",
+  "background_color": "#07070f",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "lang": "de",
+  "dir": "ltr",
+  "categories": ["finance", "utilities"],
+  "icons": [
+    {
+      "src": "/FinanzRechner/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/FinanzRechner/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/FinanzRechner/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Neue Berechnung",
+      "short_name": "Berechnen",
+      "url": "/FinanzRechner/"
+    }
+  ],
+  "description": "Investitions-Projektion mit Zinseszins, Inflation und Steuerberechnung."
+}
