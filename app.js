@@ -1310,8 +1310,8 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
   if (stroke) ctx.stroke();
 }
 
-/*    THEME TOGGLE
-   function initTheme() {
+/*    THEME TOGGLE */
+function initTheme() {
   const saved = localStorage.getItem('nTheme') || 'dark';
   const btn   = document.getElementById('themeToggle');
   document.documentElement.setAttribute('data-theme', saved);
