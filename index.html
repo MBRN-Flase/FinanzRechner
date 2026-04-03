@@ -424,7 +424,14 @@
 </script>
 
 <script src="app.js"></script>
+  
+  <!-- PWA Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('[PWA] Service Worker aktiv'))
+        .catch((err) => console.log('[PWA] Fehler', err));
+    }
+  </script>
 </body>
 </html>
-
-
