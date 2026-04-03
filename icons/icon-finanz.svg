@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#030014"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bg)" rx="128"/>
+  
+  <!-- Glow -->
+  <circle cx="256" cy="256" r="180" fill="url(#accent)" opacity="0.15"/>
+  
+  <!-- Euro Symbol -->
+  <text x="256" y="340" 
+        text-anchor="middle" 
+        font-family="system-ui, sans-serif" 
+        font-size="200" 
+        font-weight="700"
+        fill="url(#accent)">€</text>
+  
+  <!-- Growth Arrow -->
+  <path d="M120 280 L200 240 L280 160 L392 100" 
+        fill="none" 
+        stroke="#00ff88" 
+        stroke-width="20"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  
+  <!-- Arrow head -->
+  <path d="M352 100 L392 100 L392 140" 
+        fill="none" 
+        stroke="#00ff88" 
+        stroke-width="20"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>
