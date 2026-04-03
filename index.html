@@ -85,8 +85,8 @@
       <h1 class="title">Was wärst du <span class="title-accent">heute wert?</span></h1>
       <p class="subtitle">Berechne den wahren Wert deiner Zeit. Zinseszins vs. Inflation.</p>
       <div class="trust-row">
-        <span class="trust-badge">âœ“ Lokal im Browser</span>
-        <span class="trust-badge">âœ“ Keine Datenspeicherung</span>
+        <span class="trust-badge">✓ Lokal im Browser</span>
+        <span class="trust-badge">✓ Keine Datenspeicherung</span>
       </div>
     </header>
 
@@ -134,7 +134,7 @@
       <div class="input-group">
         <div class="input-label-row">
           <label class="input-label">Monatliche Sparrate</label>
-          <span class="input-value-badge" id="badge-monthly">250 â‚¬</span>
+          <span class="input-value-badge" id="badge-monthly">250 €</span>
         </div>
         <input type="range" class="slider" id="slider-monthly" min="0" max="2500" step="50" value="250" />
         <input type="number" class="input-field" id="monthly" value="250" style="display:none" />
@@ -155,7 +155,7 @@
       <div class="input-group" style="margin-top:4px">
         <label class="input-label">Startkapital (Einmalig)</label>
         <div class="input-row">
-          <span class="input-prefix">â‚¬</span>
+          <span class="input-prefix">€</span>
           <input type="number" class="input-field input-field--pfx" id="lump" value="0" min="0" />
         </div>
       </div>
@@ -179,27 +179,27 @@
         <label class="input-label">Investment-Szenario</label>
         <div class="scenario-grid">
           <button class="scenario-btn active" data-scenario="sp500">
-            <span class="scenario-icon">ðŸ‡ºðŸ‡¸</span>
+            <span class="scenario-icon">🇺🇸</span>
             <span class="scenario-name">S&P 500</span>
             <span class="scenario-rate">~10.2% p.a.</span>
           </button>
           <button class="scenario-btn" data-scenario="world-etf">
-            <span class="scenario-icon">ðŸŒ</span>
+            <span class="scenario-icon">🌍</span>
             <span class="scenario-name">World ETF</span>
             <span class="scenario-rate">~8.0% p.a.</span>
           </button>
           <button class="scenario-btn" data-scenario="btc">
-            <span class="scenario-icon">â‚¿</span>
+            <span class="scenario-icon">₿</span>
             <span class="scenario-name">Bitcoin</span>
             <span class="scenario-rate" id="btc-scenario-rate">~25.0% p.a.</span>
           </button>
           <button class="scenario-btn" data-scenario="savings">
-            <span class="scenario-icon">ðŸ¦</span>
+            <span class="scenario-icon">🏦</span>
             <span class="scenario-name">Sparkonto</span>
             <span class="scenario-rate">~2.0% p.a.</span>
           </button>
         </div>
-        <p class="scenario-disclaimer" id="scenario-disclaimer">Historische Durchschnittsrendite S&P 500 (1957â€“2024). Vergangene Performance ist keine Garantie.</p>
+        <p class="scenario-disclaimer" id="scenario-disclaimer">Historische Durchschnittsrendite S&P 500 (1957–2024). Vergangene Performance ist keine Garantie.</p>
       </div>
 
       <button class="btn-calculate" id="btn-calculate">
@@ -214,15 +214,15 @@
       <!-- HERO -->
       <div class="result-hero">
         <p class="hero-label">Dein potenzielles Vermögen</p>
-        <div class="hero-number" id="hook-number">â€”</div>
-        <p class="hero-sub" id="hook-sub">Entspricht einer heutigen Kaufkraft von ca. â€”</p>
+        <div class="hero-number" id="hook-number">—</div>
+        <p class="hero-sub" id="hook-sub">Entspricht einer heutigen Kaufkraft von ca. —</p>
         <p class="hero-kaufkraft-info" id="kaufkraft-info" style="display:none">
-          <span class="info-icon" title="Inflation halbiert den Wert deines Geldes ca. alle 10-15 Jahre (bei 5-7%). Diese Zahl zeigt dir, was du dir im Jahr 2026 für die Endsumme kaufen könntest.">â„¹ï¸</span>
+          <span class="info-icon" title="Inflation halbiert den Wert deines Geldes ca. alle 10-15 Jahre (bei 5-7%). Diese Zahl zeigt dir, was du dir im Jahr 2026 für die Endsumme kaufen könntest.">ℹ️</span>
           <span class="kaufkraft-text"></span>
         </p>
         <div class="tax-hint" id="tax-hint" style="display:none">
-          <span>â„¹</span>
-          <span id="tax-after">â€”</span>
+          <span>ℹ</span>
+          <span id="tax-after">—</span>
         </div>
       </div>
 
@@ -235,13 +235,13 @@
       <!-- VERGLEICH-KARTEN -->
       <div class="compare-grid">
         <div class="compare-card compare-card--bad">
-          <p class="compare-label">Fiat Â· Inflation</p>
-          <div class="compare-value" id="val-fiat">â€”</div>
+          <p class="compare-label">Fiat · Inflation</p>
+          <div class="compare-value" id="val-fiat">—</div>
           <p class="compare-desc">Realer Wert auf dem Konto</p>
         </div>
         <div class="compare-card compare-card--good">
           <p class="compare-label" id="invest-label">Investiert</p>
-          <div class="compare-value compare-value--good" id="val-invest">â€”</div>
+          <div class="compare-value compare-value--good" id="val-invest">—</div>
           <p class="compare-desc">Was du stattdessen hättest</p>
         </div>
       </div>
@@ -270,7 +270,7 @@
       <div class="wow-meter-wrap">
         <div class="wow-header">
           <span class="wow-title">Performance-Score</span>
-          <span class="wow-label" id="wow-label">â€”</span>
+          <span class="wow-label" id="wow-label">—</span>
         </div>
         <div class="wow-track">
           <div class="wow-fill" id="wow-fill" style="width:0%"></div>
@@ -287,8 +287,8 @@
         <div class="chart-header">
           <p class="chart-title">Vermögensentwicklung</p>
           <div class="chart-legend">
-            <span class="leg-invest">â”€ Investiert</span>
-            <span class="leg-fiat">â•Œ Konto</span>
+            <span class="leg-invest">─ Investiert</span>
+            <span class="leg-fiat">╌ Konto</span>
           </div>
         </div>
         <div class="chart-wrap">
@@ -296,10 +296,10 @@
         </div>
       </div>
 
-      <!-- JAHRESTABELLE (aufklappbar â€” neues Feature) -->
+      <!-- JAHRESTABELLE (aufklappbar — neues Feature) -->
       <div class="table-section">
         <button class="btn-toggle-table" id="btn-toggle-table">
-          <span id="table-toggle-icon">â–¶</span> Jahres-Ãœbersicht anzeigen
+          <span id="table-toggle-icon">▶</span> Jahres-Übersicht anzeigen
         </button>
         <div class="year-table-wrap" id="year-table-wrap" style="display:none">
           <div class="year-table-scroll">
@@ -326,7 +326,7 @@
         <p class="reverse-title">Wann erreichst du dein Ziel?</p>
         <div class="reverse-row">
           <div class="input-row reverse-input">
-            <span class="input-prefix">â‚¬</span>
+            <span class="input-prefix">€</span>
             <input type="number" class="input-field input-field--pfx" id="target-amount" value="1000000" min="1000" />
           </div>
           <button class="btn-reverse" id="btn-reverse">Berechnen</button>
@@ -338,9 +338,9 @@
 
       <!-- SHARE -->
       <div class="share-row">
-        <button class="btn-share-result" id="btn-share-result">ðŸ”¥ Teilen</button>
-        <button class="btn-save-image" id="btn-save-image">â¬‡ Post (1:1)</button>
-        <button class="btn-save-story" id="btn-save-story">ðŸ“± Story (9:16)</button>
+        <button class="btn-share-result" id="btn-share-result">🔥 Teilen</button>
+        <button class="btn-save-image" id="btn-save-image">⬇ Post (1:1)</button>
+        <button class="btn-save-story" id="btn-save-story">📱 Story (9:16)</button>
       </div>
 
       <!-- CTA -->
@@ -350,8 +350,8 @@
         <p class="cta-sub">Die beste Investition ist die, die du nicht aufgeschoben hast.</p>
         <div class="cta-buttons">
           <!-- Affiliate Links Struktur -->
-          <a class="btn-cta-primary" href="https://ref.trade.re/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Trade Republic (Empfehlung) â†’</a>
-          <a class="btn-cta-secondary" href="https://de.scalable.capital/einladung/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Scalable Capital â†’</a>
+          <a class="btn-cta-primary" href="https://ref.trade.re/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Trade Republic (Empfehlung) →</a>
+          <a class="btn-cta-secondary" href="https://de.scalable.capital/einladung/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Scalable Capital →</a>
         </div>
         <p class="cta-disclaimer">Keine Finanzberatung. Eigenverantwortlich handeln. Steuerliche Beratung individuell prüfen.</p>
       </div>
