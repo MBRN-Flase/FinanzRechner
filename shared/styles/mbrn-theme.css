@@ -1,4 +1,5 @@
-/*    MBRN Design System v4.0 — "CLARITY"
+/* ================================================================
+   MBRN Design System v4.0 — "CLARITY"
    Einheitliches Theme mit Fokus auf Lesbarkeit & Kontrast
    
    WICHTIGE ÄNDERUNGEN v4.0:
@@ -6,10 +7,13 @@
    - Größere Mindest-Schriftgrößen
    - Keine opacity < 0.5 für wichtige Inhalte
    - Einheitliche #000/#fff Basis
-   
+   ================================================================ */
 
-/*    01  CORE TOKENS
-   :root {
+
+/* ================================================================
+   01  CORE TOKENS
+   ================================================================ */
+:root {
   /* --- BRAND COLORS --- */
   --accent-main:        #8b5cf6;  /* MBRN Lila - technisch + emotional Fusion */
   --accent-soft:        rgba(139, 92, 246, 0.15);
@@ -123,8 +127,10 @@
 }
 
 
-/*    02  LIGHT & DARK MODE
-   
+/* ================================================================
+   02  LIGHT & DARK MODE
+   ================================================================ */
+
 /* DARK MODE (Default) - REIN SCHWARZ & WEISS BASIS */
 :root, [data-theme="dark"] {
   /* Hintergründe */
@@ -220,8 +226,10 @@
 }
 
 
-/*    03  RESET & BASE - MIT VERBESSERTER LESBARKEIT
-   *, *::before, *::after {
+/* ================================================================
+   03  RESET & BASE - MIT VERBESSERTER LESBARKEIT
+   ================================================================ */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -273,8 +281,10 @@ img {
 }
 
 
-/*    04  LAYOUT
-   
+/* ================================================================
+   04  LAYOUT
+   ================================================================ */
+
 /* Container - ERHÖHTE PADDING für bessere Lesbarkeit */
 .mbrn-container,
 .container {
@@ -344,8 +354,10 @@ img {
 .mbrn-gap-4, .gap-4 { gap: var(--space-4); }
 
 
-/*    05  TYPOGRAPHY
-   
+/* ================================================================
+   05  TYPOGRAPHY
+   ================================================================ */
+
 /* Display / Headings */
 .mbrn-display {
   font-family: var(--font-display);
@@ -431,8 +443,10 @@ img {
 }
 
 
-/*    06  COMPONENTS
-   
+/* ================================================================
+   06  COMPONENTS
+   ================================================================ */
+
 /* --- BUTTONS MIT HIERARCHIE --- */
 
 /* L1 - PRIMARY ACTION (CTAs, wichtige Buttons) */
@@ -897,8 +911,10 @@ img {
 }
 
 
-/*    07  EFFECTS
-   
+/* ================================================================
+   07  EFFECTS
+   ================================================================ */
+
 /* Background Glows */
 .mbrn-bg-glow {
   position: fixed;
@@ -988,8 +1004,10 @@ img {
 }
 
 
-/*    08  UTILITIES
-   
+/* ================================================================
+   08  UTILITIES
+   ================================================================ */
+
 .mbrn-sr-only {
   position: absolute;
   width: 1px;
@@ -1028,8 +1046,10 @@ img {
   }
 }
 
-/*    09  FOOTER - Unified for all MBRN projects
-   
+/* ================================================================
+   09  FOOTER - Unified for all MBRN projects
+   ================================================================ */
+
 .mbrn-footer {
   width: 100%;
   padding: var(--space-8) var(--space-5);
@@ -1093,8 +1113,10 @@ img {
   opacity: 0.7;
 }
 
-/*    10  LEGAL PAGES (Impressum, Datenschutz, FAQ)
-   
+/* ================================================================
+   10  LEGAL PAGES (Impressum, Datenschutz, FAQ)
+   ================================================================ */
+
 .legal-page {
   min-height: 100vh;
   padding: calc(70px + var(--space-8)) var(--space-5) var(--space-8);
@@ -1322,8 +1344,10 @@ img {
 }
 
 
-/*    11  PREMIUM ANIMATIONS & MICRO-INTERACTIONS
-   
+/* ================================================================
+   11  PREMIUM ANIMATIONS & MICRO-INTERACTIONS
+   ================================================================ */
+
 /* Smooth page load animation */
 @keyframes mbrn-page-load {
   from { opacity: 0; transform: translateY(10px); }
@@ -1524,8 +1548,10 @@ img {
   animation: mbrn-text-shimmer 4s linear infinite;
 }
 
-/*    12  GLASS MORPHISM UTILITIES
-   
+/* ================================================================
+   12  GLASS MORPHISM UTILITIES
+   ================================================================ */
+
 .mbrn-glass {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
@@ -1548,8 +1574,10 @@ img {
 }
 
 
-/*    13  ENHANCED BUTTON MICRO-INTERACTIONS
-   
+/* ================================================================
+   13  ENHANCED BUTTON MICRO-INTERACTIONS
+   ================================================================ */
+
 /* Button press effect */
 .mbrn-btn:active,
 .btn:active,
@@ -1596,8 +1624,10 @@ img {
 }
 
 
-/*    14  ENHANCED INPUT STATES
-   
+/* ================================================================
+   14  ENHANCED INPUT STATES
+   ================================================================ */
+
 /* Input hover state */
 .mbrn-input:hover,
 .mbrn-input-row:hover {
@@ -1654,8 +1684,10 @@ img {
 }
 
 
-/*    15  ENHANCED CARD INTERACTIONS
-   
+/* ================================================================
+   15  ENHANCED CARD INTERACTIONS
+   ================================================================ */
+
 /* Card with interactive border */
 .mbrn-card--interactive {
   position: relative;
@@ -1700,8 +1732,10 @@ img {
 }
 
 
-/*    16  SKELETON LOADING STATES
-   
+/* ================================================================
+   16  SKELETON LOADING STATES
+   ================================================================ */
+
 .mbrn-skeleton {
   background: linear-gradient(
     90deg,
@@ -1733,8 +1767,10 @@ img {
 }
 
 
-/*    17  SMOOTH SCROLL & SCROLLBAR STYLING
-   
+/* ================================================================
+   17  SMOOTH SCROLL & SCROLLBAR STYLING
+   ================================================================ */
+
 /* Custom scrollbar for webkit browsers */
 ::-webkit-scrollbar {
   width: 8px;
