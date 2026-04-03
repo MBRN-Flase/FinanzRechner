@@ -1,8 +1,6 @@
-/* ================================================================
-   MBRN NumerologieRechner Theme Overrides v4.0
+/*    MBRN NumerologieRechner Theme Overrides v4.0
    Gold als feature-secondary + Cinzel/Outfit Fonts
-   ================================================================ */
-
+   
 :root {
   /* Typography: Emotional - Cinzel + Outfit */
   --font-display: 'Cinzel', Georgia, serif;

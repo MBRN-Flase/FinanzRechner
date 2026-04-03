@@ -1,9 +1,7 @@
-// ============================================================
-//  MBRN FINANZ-RECHNER v1.4 — Inflation sichtbar & wirksam
+// //  MBRN FINANZ-RECHNER v1.4 — Inflation sichtbar & wirksam
 //  Fix: Inflation beeinflusst jetzt Hauptwert, Detailwerte,
 //       Chartdaten und Kontext-Vergleich deutlich sichtbar
-// ============================================================
-'use strict';
+// 'use strict';
 
 // Korrigierte Szenarien mit realistischeren Wachstumsraten
 const SCENARIOS = {
@@ -23,10 +21,8 @@ let debounceTimer = null;
 let counterTimer = null;
 let chartResizeObserver = null;
 
-// ============================================================
-//  INIT
-// ============================================================
-
+// //  INIT
+// 
 document.addEventListener('DOMContentLoaded', function () {
   fetchPrices();
   updateYearsHint();
@@ -36,10 +32,8 @@ document.addEventListener('DOMContentLoaded', function () {
   updateScenarioNote();
 });
 
-// ============================================================
-//  CHART RESIZE OBSERVER
-// ============================================================
-
+// //  CHART RESIZE OBSERVER
+// 
 function initChartResizeObserver() {
   const chartWrap = document.querySelector('.chart-wrap');
   if (!chartWrap) return;
@@ -56,10 +50,8 @@ function initChartResizeObserver() {
   chartResizeObserver.observe(chartWrap);
 }
 
-// ============================================================
-//  TOAST
-// ============================================================
-
+// //  TOAST
+// 
 function showToast(msg) {
   var t = document.getElementById('toast');
   if (!t) return;
@@ -68,10 +60,8 @@ function showToast(msg) {
   setTimeout(function () { t.classList.remove('show'); }, 3500);
 }
 
-// ============================================================
-//  LIVE PREISE
-// ============================================================
-
+// //  LIVE PREISE
+// 
 function fetchPrices() {
   var ctrl = new AbortController();
   var timer = setTimeout(function () { ctrl.abort(); }, 6000);
@@ -111,10 +101,8 @@ function fetchPrices() {
     });
 }
 
-// ============================================================
-//  SLIDER INIT
-// ============================================================
-
+// //  SLIDER INIT
+// 
 function initSliders() {
   linkSlider('slider-age-now',   'age-now',     'badge-age-now',   function(v){ return v + ' Jahre'; });
   linkSlider('slider-age-start', 'age-start',   'badge-age-start', function(v){ return v + ' Jahre'; });
@@ -252,10 +240,8 @@ function scheduleRecalc() {
   debounceTimer = setTimeout(calculate, 300);
 }
 
-// ============================================================
-//  BERECHNUNG
-// ============================================================
-
+// //  BERECHNUNG
+// 
 function calculate() {
     // 1. Inputs abgreifen (Sicherstellen, dass es Zahlen sind)
     const ageNow = parseFloat(getVal('age-now')) || 0;
@@ -432,10 +418,8 @@ function calculate() {
     }, 160);
 }
 
-// ============================================================
-//  ERGEBNIS ANZEIGEN
-// ============================================================
-
+// //  ERGEBNIS ANZEIGEN
+// 
 function showResult(r) {
   var section = document.getElementById('result-section');
   if (!section) return;
@@ -554,10 +538,8 @@ function showResult(r) {
   }, 130);
 }
 
-// ============================================================
-//  ANIMIERTER COUNTER
-// ============================================================
-
+// //  ANIMIERTER COUNTER
+// 
 function animateCounter(id, targetVal) {
   var el = document.getElementById(id);
   if (!el) return;
@@ -582,10 +564,8 @@ function animateCounter(id, targetVal) {
   });
 }
 
-// ============================================================
-//  KONTEXT-VERGLEICH
-// ============================================================
-
+// //  KONTEXT-VERGLEICH
+// 
 function renderContextBox(val, netEndValue) {
   var box = document.getElementById('context-box');
   var grid = document.getElementById('context-grid');
@@ -625,10 +605,8 @@ function formatNum(n) {
   return n.toFixed(1) + ' ×';
 }
 
-// ============================================================
-//  JAHRESTABELLE
-// ============================================================
-
+// //  JAHRESTABELLE
+// 
 function fillYearTable(r) {
   var tbody = document.getElementById('year-table-body');
   if (!tbody) return;
@@ -659,10 +637,8 @@ function fillYearTable(r) {
   }).join('');
 }
 
-// ============================================================
-//  REVERSE-RECHNER: Wann bin ich Millionär?
-// ============================================================
-
+// //  REVERSE-RECHNER: Wann bin ich Millionär?
+// 
 function calculateReverse() {
   if (!lastResult) {
     showToast('⚠ Bitte zuerst berechnen');
@@ -712,10 +688,8 @@ function calculateReverse() {
   }
 }
 
-// ============================================================
-//  CHART (mit Milestone-Linien)
-// ============================================================
-
+// //  CHART (mit Milestone-Linien)
+// 
 function drawChart(data, maxInvest) {
   var canvas = document.getElementById('growth-chart');
   if (!canvas || !canvas.getContext) return;
@@ -850,10 +824,8 @@ function drawChart(data, maxInvest) {
   });
 }
 
-// ============================================================
-//  INSIGHT TEXT
-// ============================================================
-
+// //  INSIGHT TEXT
+// 
 function buildInsight(r) {
   var s = SCENARIOS[activeScenario].name;
   var diff = formatCurrency(r.realValue - r.fiatVal);
@@ -873,10 +845,8 @@ function buildInsight(r) {
   return base;
 }
 
-// ============================================================
-//  SHARE IMAGE
-// ============================================================
-
+// //  SHARE IMAGE
+// 
 function generateShareImage(fmt) {
   if (!lastResult) {
     showToast('⚠ Bitte zuerst berechnen');
@@ -1068,10 +1038,8 @@ function drawInsBox(ctx, r, W, y, boxH) {
   wrapText(ctx, ins, W / 2, y + boxH / 2 - 16, W - 160, 32);
 }
 
-// ============================================================
-//  SHARE TEXT
-// ============================================================
-
+// //  SHARE TEXT
+// 
 function buildShareText() {
   if (!lastResult) return '';
   var r = lastResult, url = window.location.href.split('?')[0];
@@ -1084,10 +1052,8 @@ function buildShareText() {
   ].join('\n');
 }
 
-// ============================================================
-//  EVENTS
-// ============================================================
-
+// //  EVENTS
+// 
 function bindEvents() {
   // Szenarien
   document.querySelectorAll('.scenario-btn').forEach(function(btn) {
@@ -1203,10 +1169,8 @@ function bindEvents() {
   });
 }
 
-// ============================================================
-//  HILFSFUNKTIONEN
-// ============================================================
-
+// //  HILFSFUNKTIONEN
+// 
 function setCalcLoading(on) {
   var btn = document.getElementById('btn-calculate');
   var icon = document.getElementById('calc-icon');
@@ -1346,10 +1310,8 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
   if (stroke) ctx.stroke();
 }
 
-/* =====================================================
-   THEME TOGGLE
-   ===================================================== */
-function initTheme() {
+/*    THEME TOGGLE
+   function initTheme() {
   const saved = localStorage.getItem('nTheme') || 'dark';
   const btn   = document.getElementById('themeToggle');
   document.documentElement.setAttribute('data-theme', saved);
