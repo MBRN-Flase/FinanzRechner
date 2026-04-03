@@ -1,0 +1,101 @@
+/* ================================================================
+   MBRN NumerologieRechner Theme Overrides v4.0
+   Gold als feature-secondary + Cinzel/Outfit Fonts
+   ================================================================ */
+
+:root {
+  /* Typography: Emotional - Cinzel + Outfit */
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-mono:    'Outfit', 'Segoe UI', sans-serif;
+  
+  /* Legacy font aliases for compatibility */
+  --f-display: var(--font-display);
+  --f-head:    var(--font-display);
+  --f-body:    var(--font-mono);
+  
+  /* Legacy transition aliases */
+  --t-s: var(--transition-fast);
+  --t-m: var(--transition-normal);
+  --ease: var(--ease-out);
+  
+  /* Feature Secondary: Gold für Numerologie */
+  --feature-secondary: #f59e0b;
+  --feature-secondary-rgb: 245, 158, 11;
+  
+  /* Legacy gold aliases */
+  --gold: var(--feature-secondary);
+  --gold-bright: #fbbf24;
+  --gold-dim: rgba(245, 158, 11, 0.5);
+  --gold-border: rgba(245, 158, 11, 0.26);
+  --gold-glow: rgba(245, 158, 11, 0.22);
+  
+  /* Legacy accent aliases */
+  --accent-bright: var(--accent-main);
+  --accent-border: rgba(139, 92, 246, 0.24);
+  --accent-dim: rgba(139, 92, 246, 0.12);
+  
+  /* Numerology-specific tile colors */
+  --life:     var(--feature-secondary);
+  --soul:     #60a5fa;
+  --expr:     #a78bfa;
+  --pers:     #34d399;
+  
+  /* Glow/Border variants */
+  --life-b:    rgba(245, 158, 11, 0.20);
+  --life-glow: rgba(245, 158, 11, 0.24);
+  --soul-b:    rgba(96, 165, 250, 0.18);
+  --soul-glow: rgba(96, 165, 250, 0.16);
+  --expr-b:    rgba(167, 139, 250, 0.18);
+  --expr-glow: rgba(167, 139, 250, 0.16);
+  --pers-b:    rgba(52, 211, 153, 0.16);
+  --pers-glow: rgba(52, 211, 153, 0.14);
+  
+  /* Extended radius scale */
+  --r-xl: 20px; --r-lg: 16px; --r-md: 12px; --r-sm: 10px; --r-xs: 8px;
+  
+  /* Legacy tile bg alias */
+  --tile-bg: var(--card);
+  
+  /* Legacy border aliases */
+  --border-dim: var(--border);
+  --border-mid: var(--border);
+  
+  /* Legacy accent aliases */
+  --accent-glow: rgba(139, 92, 246, 0.28);
+  
+  /* Legacy text aliases */
+  --text-mid: var(--text-dim);
+  
+  /* Karmic debt aliases */
+  --debt-border: rgba(239, 68, 68, 0.28);
+  --debt-bg: rgba(239, 68, 68, 0.05);
+  
+  /* Modal shadow alias */
+  --sh-modal: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+[data-theme="light"] {
+  --feature-secondary: #f59e0b;
+  --soul: #3b82f6;
+  --expr: #8b5cf6;
+  --pers: #10b981;
+}
+
+/* Numerology-specific glow adjustments */
+.bg-glow--1 {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
+}
+
+.bg-glow--2 {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+}
+
+/* Hero headline gradient */
+.hero-hl,
+.hero-headline {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--feature-secondary), #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

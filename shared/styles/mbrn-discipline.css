@@ -1,0 +1,14 @@
+/* ================================================================
+   MBRN Discipline Tracker Theme Overrides v4.0
+   Orange als feature-secondary (eindeutig von Gold/Blau unterscheidbar)
+   ================================================================ */
+
+:root {
+  /* Feature Secondary: Orange für Discipline */
+  --feature-secondary: #f97316;
+  --feature-secondary-rgb: 249, 115, 22;
+}
+
+[data-theme="light"] {
+  --feature-secondary: #ea580c;
+}
