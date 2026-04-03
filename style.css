@@ -1,7 +1,7 @@
 /*    MBRN FINANZ-RECHNER v1.3 — style.css
    Uses: mbrn-theme.css + mbrn-finanz.css
    Project-specific styles ONLY - NO :root, NO resets
-   
+*/
 /* Background - Finanz-specific gradients only */
 .bg-base {
   background: radial-gradient(ellipse at 25% 40%, #0c0830 0%, #030014 60%);

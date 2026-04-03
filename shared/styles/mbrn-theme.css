@@ -8,8 +8,8 @@
    - Einheitliche #000/#fff Basis
    
 
-/*    01  CORE TOKENS
-   :root {
+/*    01  CORE TOKENS */
+:root {
   /* --- BRAND COLORS --- */
   --accent-main:        #8b5cf6;  /* MBRN Lila - technisch + emotional Fusion */
   --accent-soft:        rgba(139, 92, 246, 0.15);
@@ -273,8 +273,8 @@ img {
 }
 
 
-/*    04  LAYOUT
-   
+/*    04  LAYOUT */
+
 /* Container - ERHÖHTE PADDING für bessere Lesbarkeit */
 .mbrn-container,
 .container {
@@ -344,8 +344,8 @@ img {
 .mbrn-gap-4, .gap-4 { gap: var(--space-4); }
 
 
-/*    05  TYPOGRAPHY
-   
+/*    05  TYPOGRAPHY */
+
 /* Display / Headings */
 .mbrn-display {
   font-family: var(--font-display);
@@ -431,8 +431,8 @@ img {
 }
 
 
-/*    06  COMPONENTS
-   
+/*    06  COMPONENTS */
+
 /* --- BUTTONS MIT HIERARCHIE --- */
 
 /* L1 - PRIMARY ACTION (CTAs, wichtige Buttons) */
@@ -897,8 +897,8 @@ img {
 }
 
 
-/*    07  EFFECTS
-   
+/*    07  EFFECTS */
+
 /* Background Glows */
 .mbrn-bg-glow {
   position: fixed;
@@ -988,8 +988,8 @@ img {
 }
 
 
-/*    08  UTILITIES
-   
+/*    08  UTILITIES */
+
 .mbrn-sr-only {
   position: absolute;
   width: 1px;
@@ -1028,8 +1028,8 @@ img {
   }
 }
 
-/*    09  FOOTER - Unified for all MBRN projects
-   
+/*    09  FOOTER - Unified for all MBRN projects */
+
 .mbrn-footer {
   width: 100%;
   padding: var(--space-8) var(--space-5);
@@ -1093,8 +1093,8 @@ img {
   opacity: 0.7;
 }
 
-/*    10  LEGAL PAGES (Impressum, Datenschutz, FAQ)
-   
+/*    10  LEGAL PAGES (Impressum, Datenschutz, FAQ) */
+
 .legal-page {
   min-height: 100vh;
   padding: calc(70px + var(--space-8)) var(--space-5) var(--space-8);
