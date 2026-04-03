@@ -272,9 +272,6 @@ function calculate() {
     setCalcLoading(true);
 
     setTimeout(function () {
-        // Steuer-Konstanten (Effektiver Satz für ETFs in DE: ~18,46%)
-        const taxRate = 0.1846; 
-
         // 2. Initialisierung der Rechen-Variablen
         let totalInvested = startCapital;
         let nominalEndValue = startCapital;
@@ -302,7 +299,7 @@ function calculate() {
                 const monthlyProfit = nominalEndValue - monthStartValue;
                 yearlyProfit += monthlyProfit;
                 
-                // 2. Einzahlung am Monatsende
+                // 2. Einzahlung am Monatsende (nachschüssig)
                 nominalEndValue += currentMonthlyRate;
                 totalInvested += currentMonthlyRate;
                 yearlyInput += currentMonthlyRate;
@@ -341,13 +338,24 @@ function calculate() {
 
         // 4. Abschluss-Kalkulationen (Mathematik-Fixes)
         
-        // A. Gewinn & Steuern (Nur auf den tatsächlichen Zuwachs!)
+        // A. Gewinn & Steuern - KORRIGIERTE STEUERLOGIK
         const totalProfit = Math.max(0, nominalEndValue - totalInvested);
         
-        // Korrekte Steuer-Logik: Freibetrag berücksichtigen + Teilfreistellung
-        const taxableProfit = Math.max(0, totalProfit - FREIBETRAG);
-        const effectiveTaxRate = scenario.type === 'savings' ? taxRate : taxRate * 0.7; // 30% Teilfreistellung für ETFs/Crypto
-        const taxAmount = taxableProfit * effectiveTaxRate;
+        // Steuerberechnung: Crypto 0%, ETF mit Teilfreistellung, Cash voll
+        let effectiveTaxRate;
+        if (scenario.type === 'crypto') {
+            // Krypto ist nach 1 Jahr Haltefrist in DE steuerfrei
+            effectiveTaxRate = 0; 
+        } else if (scenario.type === 'etf') {
+            // 30% Teilfreistellung auf Aktien-ETFs
+            effectiveTaxRate = TAX_RATE_BASE * 0.7; 
+        } else {
+            // Volle Steuer z.B. für Sparkonto/Cash
+            effectiveTaxRate = TAX_RATE_BASE; 
+        }
+
+        // KEIN FREIBETRAG (vereinfachte Berechnung am Laufzeitende)
+        const taxAmount = totalProfit * effectiveTaxRate;
         const netEndValue = nominalEndValue - taxAmount;
 
         // B. Kaufkraft (Inflation über die volle Laufzeit diskontiert)
@@ -408,7 +416,7 @@ function calculate() {
             ageStart: ageStart,
             rendite: returnRatePA,
             taxType: scenario.type,
-            effectiveTaxRate: taxRate,
+            effectiveTaxRate: effectiveTaxRate,
             inflation: inflationRatePA,
             purchasingPowerNet: purchasingPower
         };
@@ -445,7 +453,7 @@ function showResult(r) {
     if (r.taxType === 'crypto' && r.years > 1) {
       taxHint.style.display = 'inline-flex';
       setText('tax-after', 'Steuerfrei (Haltefrist > 1 Jahr)');
-    } else if (r.gain > FREIBETRAG) {
+    } else if (r.taxAmount > 0) {
       taxHint.style.display = 'inline-flex';
       var taxPercent = (r.effectiveTaxRate * 100).toFixed(1).replace('.0', '');
       var taxLabel = r.taxType === 'etf'
@@ -662,7 +670,10 @@ function calculateReverse() {
 
   while (val < target && years < maxYears) {
     for (var m = 0; m < 12; m++) {
-      val = (val + currentMonthly) * (1 + monthlyRate);
+      // 1. Erst Zinsen auf das Vorab-Kapital (nachschüssig)
+      val = val * (1 + monthlyRate);
+      // 2. Dann die monatliche Einzahlung addieren
+      val = val + currentMonthly;
     }
     currentMonthly = currentMonthly * (1 + dynamicRate);
     years++;
