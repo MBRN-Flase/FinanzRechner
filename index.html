@@ -479,8 +479,9 @@
   <!-- Theme Toggle Script -->
   <script>
     (function(){
-      const saved = localStorage.getItem('fr-theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', saved);
+      const saved = localStorage.getItem('fr-theme');
+      const theme = saved || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
       
       const btn = document.getElementById('frThemeBtn');
       if(!btn) return;
