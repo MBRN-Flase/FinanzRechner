@@ -59,8 +59,8 @@
       font-variant-numeric: tabular-nums;
     }
     
-    /* Theme Toggle - FinanzRechner Style */
-    .theme-toggle {
+    /* Theme Toggle - FinanzRechner Style (higher specificity to override mbrn-theme.css) */
+    body .theme-toggle {
       position: fixed;
       top: 20px;
       right: 20px;
@@ -79,12 +79,12 @@
       transition: all 0.2s ease;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    .theme-toggle:hover {
+    body .theme-toggle:hover {
       border-color: var(--accent-main);
       transform: scale(1.05);
       box-shadow: 0 0 15px var(--accent-glow);
     }
-    .theme-icon {
+    body .theme-toggle .theme-icon {
       line-height: 1;
     }
   </style>
