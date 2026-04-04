@@ -2,6 +2,52 @@
    Uses: mbrn-theme.css + mbrn-finanz.css
    Project-specific styles ONLY - NO :root, NO resets
 */
+
+/* === LIGHT MODE OVERRIDES === */
+[data-theme="light"] .bg-base {
+  background: radial-gradient(ellipse at 25% 40%, #f0f0f5 0%, #e8e8f0 60%);
+}
+
+[data-theme="light"] .bg-glow--1 {
+  opacity: 0.15;
+}
+
+[data-theme="light"] .bg-glow--2 {
+  opacity: 0.12;
+}
+
+[data-theme="light"] .input-row {
+  background: rgba(0,0,0,0.04);
+}
+
+[data-theme="light"] .inf-preset {
+  background: rgba(0,0,0,0.03);
+}
+
+[data-theme="light"] .scenario-btn {
+  background: rgba(0,0,0,0.03);
+}
+
+[data-theme="light"] .year-table th {
+  background: rgba(139,92,246,0.08);
+}
+
+[data-theme="light"] .context-item {
+  background: rgba(0,0,0,0.03);
+}
+
+[data-theme="light"] .wow-track {
+  background: rgba(0,0,0,0.08);
+}
+
+[data-theme="light"] .btn-kofi:hover {
+  background: rgba(255,94,91,0.08);
+}
+
+[data-theme="light"] .toast {
+  backdrop-filter: blur(12px);
+}
+
 /* Background - Finanz-specific gradients only */
 .bg-base {
   background: radial-gradient(ellipse at 25% 40%, #0c0830 0%, #030014 60%);
