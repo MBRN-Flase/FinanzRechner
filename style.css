@@ -48,6 +48,10 @@
   backdrop-filter: blur(12px);
 }
 
+[data-theme="light"] .mbrn-footer {
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.05) 100%);
+}
+
 /* Background - Finanz-specific gradients only */
 .bg-base {
   background: radial-gradient(ellipse at 25% 40%, #0c0830 0%, #030014 60%);
