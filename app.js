@@ -17,6 +17,13 @@ function safeSetText(elementOrId, text) {
   element.textContent = String(text ?? '');
 }
 
+function safeClear(element) {
+  if (!element) return;
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // END SECURITY UTILITIES
 // ═══════════════════════════════════════════════════════════
