@@ -59,33 +59,33 @@
       font-variant-numeric: tabular-nums;
     }
     
-    /* Theme Toggle - FinanzRechner Style (higher specificity to override mbrn-theme.css) */
+    /* Theme Toggle - FinanzRechner Style (override mbrn-theme.css with !important) */
     body .theme-toggle {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--card-bg);
-      color: var(--text);
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: fixed !important;
+      top: 20px !important;
+      right: 20px !important;
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 50% !important;
+      border: 1px solid var(--border) !important;
+      background: var(--card-bg) !important;
+      color: var(--text) !important;
+      cursor: pointer !important;
+      font-size: 18px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 100 !important;
+      transition: all 0.2s ease !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
     }
     body .theme-toggle:hover {
-      border-color: var(--accent-main);
-      transform: scale(1.05);
-      box-shadow: 0 0 15px var(--accent-glow);
+      border-color: var(--accent-main) !important;
+      transform: scale(1.05) !important;
+      box-shadow: 0 0 15px var(--accent-glow) !important;
     }
     body .theme-toggle .theme-icon {
-      line-height: 1;
+      line-height: 1 !important;
     }
   </style>
   <!-- html2canvas for screenshot export -->
