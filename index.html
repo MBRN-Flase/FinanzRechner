@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Finanz-Rechner – Sieh, wie sich dein Geld entwickeln kann</title>
-  <meta name="description" content="Berechne ganz einfach, wie sich dein Geld mit der Zeit verändern kann. Mit aktuellen Kursen für Bitcoin und Ethereum. Alles direkt im Browser." />
+  <title>Finanz-Rechner – Wie sich dein Geld entwickelt</title>
+  <meta name="description" content="Berechne einfach, wie sich dein Geld mit der Zeit verändert. Mit aktuellen Kursen für Bitcoin und Ethereum. Alles direkt im Browser." />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.coingecko.com;">
   <meta name="theme-color" content="#8b5cf6">
-  <meta property="og:title" content="Finanz-Rechner – Sieh, wie sich dein Geld entwickeln kann" />
-  <meta property="og:description" content="Berechne ganz einfach, wie sich dein Geld mit der Zeit verändern kann. Mit aktuellen Kursen." />
+  <meta property="og:title" content="Finanz-Rechner – Wie sich dein Geld entwickelt" />
+  <meta property="og:description" content="Berechne einfach, wie sich dein Geld mit der Zeit verändert. Mit aktuellen Kursen." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://flase-mbrn.github.io/FinanzRechner/" />
   <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -145,10 +145,10 @@
     <div class="ticker-bar">
       <div class="ticker-inner" id="ticker-inner">
         <span class="ticker-label">Aktuell:</span>
-        <span class="ticker-value ticker-green" id="btc-price">Lade...</span>
+        <span class="ticker-value ticker-green" id="btc-price">Lädt...</span>
         <span class="ticker-sep">/</span>
         <span class="ticker-label">ETH</span>
-        <span class="ticker-value ticker-green" id="eth-price">Lade...</span>
+        <span class="ticker-value ticker-green" id="eth-price">Lädt...</span>
         <span class="ticker-sep">/</span>
         <span class="ticker-label">Inflation (DE)</span>
         <span class="ticker-value ticker-red" id="inflation-display">+3.8%/Jahr</span>
@@ -157,7 +157,7 @@
 
     <!-- INPUT SECTION -->
     <section class="input-card">
-      <p class="card-eyebrow">✦ Deine Eingaben</p>
+      <p class="card-eyebrow">✦ Gib ein</p>
 
       <!-- Alter -->
       <div class="input-group">
@@ -172,19 +172,19 @@
       <!-- Startalter -->
       <div class="input-group">
         <div class="input-label-row">
-          <label class="input-label">Wann hättest du anfangen können?</label>
+          <label class="input-label">Wann hast du angefangen zu sparen?</label>
           <span class="input-value-badge" id="badge-age-start">20 Jahre</span>
         </div>
         <input type="range" class="slider" id="slider-age-start" min="10" max="70" value="20" />
         <input type="number" class="input-field" id="age-start" value="20" style="display:none" />
-        <span class="input-hint" id="years-hint">= 10 Jahre Wachstum verpasst</span>
+        <span class="input-hint" id="years-hint">= 10 Jahre dabei</span>
         <span class="input-error" id="err-age" style="display:none"></span>
       </div>
 
       <!-- Sparrate -->
       <div class="input-group">
         <div class="input-label-row">
-          <label class="input-label">Wie viel sparst du im Monat?</label>
+          <label class="input-label">Wie viel legst du im Monat zurück?</label>
           <span class="input-value-badge" id="badge-monthly">250 €</span>
         </div>
         <input type="range" class="slider" id="slider-monthly" min="0" max="2500" step="50" value="250" />
@@ -194,17 +194,17 @@
       <!-- Dynamik -->
       <div class="input-group">
         <div class="input-label-row">
-          <label class="input-label">Erhöhst du deine Sparrate jährlich?</label>
+          <label class="input-label">Steigert sich deine Sparrate?</label>
           <span class="input-value-badge" id="badge-dynamic">0 %</span>
         </div>
         <input type="range" class="slider" id="slider-dynamic" min="0" max="10" step="1" value="0" />
         <input type="number" class="input-field" id="dynamic-rate" value="0" style="display:none" />
-        <span class="input-hint" id="dynamic-hint">Deine Sparrate bleibt konstant</span>
+        <span class="input-hint" id="dynamic-hint">Du sparst jedes Jahr gleich viel</span>
       </div>
 
       <!-- Einmalzahlung -->
       <div class="input-group" style="margin-top:4px">
-        <label class="input-label">Startkapital (falls vorhanden)</label>
+        <label class="input-label">Startgeld (falls du schon etwas hast)</label>
         <div class="input-row">
           <span class="input-prefix">€</span>
           <input type="number" class="input-field input-field--pfx" id="lump" value="0" min="0" />
@@ -213,13 +213,13 @@
 
       <!-- Inflation Custom -->
       <div class="input-group" style="margin-top:4px">
-        <label class="input-label">Wie hoch ist die Inflation?</label>
+        <label class="input-label">Wie viel Teuerung?</label>
         <div class="input-row">
           <input type="number" class="input-field" id="inflation-input" value="3.8" min="0" max="20" step="0.1" />
           <span class="input-unit">%</span>
         </div>
         <div class="inflation-presets">
-          <button class="inf-preset" data-val="0.02">2% (Ziel der EZB)</button>
+          <button class="inf-preset" data-val="0.02">2% (Ziel der Notenbank)</button>
           <button class="inf-preset active" data-val="0.038">3.8% (Realistisch)</button>
           <button class="inf-preset" data-val="0.07">7% (Krisenzeit)</button>
         </div>
@@ -227,16 +227,16 @@
 
       <!-- Szenarien -->
       <div class="input-group" style="margin-top:8px">
-        <label class="input-label">Wie soll dein Geld wachsen?</label>
+        <label class="input-label">Wohin mit dem Geld?</label>
         <div class="scenario-grid">
           <button class="scenario-btn active" data-scenario="sp500">
             <span class="scenario-icon">🇺🇸</span>
-            <span class="scenario-name">S&P 500</span>
+            <span class="scenario-name">Aktien USA</span>
             <span class="scenario-rate">~10% pro Jahr</span>
           </button>
           <button class="scenario-btn" data-scenario="world-etf">
             <span class="scenario-icon">🌍</span>
-            <span class="scenario-name">Welt-ETF</span>
+            <span class="scenario-name">Weltweit</span>
             <span class="scenario-rate">~8% pro Jahr</span>
           </button>
           <button class="scenario-btn" data-scenario="btc">
@@ -250,12 +250,12 @@
             <span class="scenario-rate">~2% pro Jahr</span>
           </button>
         </div>
-        <p class="scenario-disclaimer" id="scenario-disclaimer">Das sind historische Durchschnittswerte. Vergangene Ergebnisse sind keine Garantie für die Zukunft.</p>
+        <p class="scenario-disclaimer" id="scenario-disclaimer">Das sind Durchschnittswerte aus der Vergangenheit. Die Zukunft kann anders sein.</p>
       </div>
 
       <button class="btn-calculate" id="btn-calculate">
         <span class="btn-calc-icon" id="calc-icon">✦</span>
-        <span id="calc-text">Ergebnis anzeigen</span>
+        <span id="calc-text">Anzeigen</span>
       </button>
     </section>
 
@@ -380,7 +380,7 @@
             <span class="input-prefix">€</span>
             <input type="number" class="input-field input-field--pfx" id="target-amount" value="1000000" min="1000" />
           </div>
-          <button class="btn-reverse" id="btn-reverse">Berechnen</button>
+          <button class="btn-reverse" id="btn-reverse">Anzeigen</button>
         </div>
         <div class="reverse-result" id="reverse-result" style="display:none">
           <p class="reverse-result-text" id="reverse-result-text"></p>
@@ -400,11 +400,11 @@
         <p class="cta-headline">Fang heute an.</p>
         <p class="cta-sub">Je früher du anfängst, desto mehr kann dein Geld für dich arbeiten.</p>
         <div class="cta-buttons">
-          <a class="btn-cta-primary" href="https://ref.trade.re/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Trade Republic (Empfehlung) →</a>
+          <a class="btn-cta-primary" href="https://ref.trade.re/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Trade Republic →</a>
           <a class="btn-cta-secondary" href="https://de.scalable.capital/einladung/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Scalable Capital →</a>
         </div>
 <section class="support-section">
-  <a class="btn-kofi" href="https://ko-fi.com/flasembrn" target="_blank" rel="noopener">☕ Uns unterstützen</a>
+  <a class="btn-kofi" href="https://ko-fi.com/flasembrn" target="_blank" rel="noopener">☕ Unterstützen</a>
 </section>
 
 <!-- DATENSCHUTZ / IMPRESSUM MODAL (Unified MBRN) -->
