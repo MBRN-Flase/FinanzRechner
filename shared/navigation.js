@@ -94,7 +94,7 @@
     if (btn.dataset.initialized) return;
     btn.dataset.initialized = 'true';
 
-    const saved = localStorage.getItem('nTheme') || 'dark';
+    const saved = localStorage.getItem('mbrn-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(btn, saved);
 
@@ -102,7 +102,7 @@
       const cur = document.documentElement.getAttribute('data-theme');
       const next = cur === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('nTheme', next);
+      localStorage.setItem('mbrn-theme', next);
       updateThemeIcon(btn, next);
       btn.setAttribute('aria-label', next === 'dark' ? 'Light Mode aktivieren' : 'Dark Mode aktivieren');
     });
