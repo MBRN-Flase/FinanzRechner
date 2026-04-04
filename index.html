@@ -58,14 +58,45 @@
     .count-up {
       font-variant-numeric: tabular-nums;
     }
+    
+    /* Theme Toggle - FinanzRechner Style */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .theme-toggle:hover {
+      border-color: var(--accent-main);
+      transform: scale(1.05);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    .theme-icon {
+      line-height: 1;
+    }
   </style>
   <!-- html2canvas for screenshot export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
-  <!-- MBRN Shared Navigation -->
-  <script src="./shared/navigation.js"></script>
+  <!-- THEME TOGGLE -->
+  <button class="theme-toggle" id="themeToggle" aria-label="Dark/Light Mode wechseln">
+    <span class="theme-icon">☀</span>
+  </button>
 
   <!-- BACKGROUND -->
   <div class="bg-base"></div>
@@ -421,6 +452,30 @@
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeLegalModal();
   });
+</script>
+
+<script>
+  // Theme Toggle - FinanzRechner
+  (function(){
+    const saved = localStorage.getItem('mbrn-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    
+    const btn = document.getElementById('themeToggle');
+    const icon = btn?.querySelector('.theme-icon');
+    if(!btn) return;
+    
+    if(icon) icon.textContent = saved === 'dark' ? '☀' : '☾';
+    btn.setAttribute('aria-label', saved === 'dark' ? 'Light Mode aktivieren' : 'Dark Mode aktivieren');
+    
+    btn.addEventListener('click', function(){
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('mbrn-theme', next);
+      if(icon) icon.textContent = next === 'dark' ? '☀' : '☾';
+      btn.setAttribute('aria-label', next === 'dark' ? 'Light Mode aktivieren' : 'Dark Mode aktivieren');
+    });
+  })();
 </script>
 
 <script src="app.js"></script>
