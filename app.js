@@ -1,22 +1,25 @@
-// //  MBRN FINANZ-RECHNER v1.4 — Inflation sichtbar & wirksam
-//  Fix: Inflation beeinflusst jetzt Hauptwert, Detailwerte,
-//       Chartdaten und Kontext-Vergleich deutlich sichtbar
-// 'use strict';
+// MBRN FINANZ-RECHNER v1.4 — Security Enhanced
+
+'use strict';
 
 // ═══════════════════════════════════════════════════════════
 // SECURITY UTILITIES
 // ═══════════════════════════════════════════════════════════
 
-/**
- * Sichere DOM-Operation: Element leeren
- * @param {HTMLElement} element
- */
-function safeClear(element) {
-  if (!element) return;
-  while (element.firstChild) {
-    element.removeChild(element.firstChild);
-  }
+function escapeHtml(str) {
+  if (!str || typeof str !== 'string') return '';
+  return str.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
+function safeSetText(elementOrId, text) {
+  const element = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+  if (!element) return;
+  element.textContent = String(text ?? '');
+}
+
+// ═══════════════════════════════════════════════════════════
+// END SECURITY UTILITIES
+// ═══════════════════════════════════════════════════════════
 
 // Korrigierte Szenarien mit realistischeren Wachstumsraten
 const SCENARIOS = {
