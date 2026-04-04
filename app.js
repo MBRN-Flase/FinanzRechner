@@ -3,6 +3,21 @@
 //       Chartdaten und Kontext-Vergleich deutlich sichtbar
 // 'use strict';
 
+// ═══════════════════════════════════════════════════════════
+// SECURITY UTILITIES
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Sichere DOM-Operation: Element leeren
+ * @param {HTMLElement} element
+ */
+function safeClear(element) {
+  if (!element) return;
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+}
+
 // Korrigierte Szenarien mit realistischeren Wachstumsraten
 const SCENARIOS = {
   'sp500':     { name: 'S&P 500',   rate: 0.102, type: 'etf' },
@@ -595,16 +610,37 @@ function renderContextBox(val, netEndValue) {
     { emoji: '✈️', label: 'Weltreisen (ca. 5.000€)', val: Math.round(compareValue / worldTrip), price: worldTrip },
   ];
 
-  grid.innerHTML = items.map(function(item) {
-    return '<div class="context-item">' +
-      '<span class="context-emoji">' + item.emoji + '</span>' +
-      '<div class="context-text">' +
-        '<strong>' + formatNum(item.val) + '</strong>' +
-        item.label +
-        '<small style="opacity:0.6;display:block">' + formatCurrency(item.price) + '</small>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+  // SECURITY: DOM-API statt innerHTML
+  safeClear(grid);
+  items.forEach(function(item) {
+    var div = document.createElement('div');
+    div.className = 'context-item';
+    
+    var emojiSpan = document.createElement('span');
+    emojiSpan.className = 'context-emoji';
+    emojiSpan.textContent = item.emoji;
+    
+    var textDiv = document.createElement('div');
+    textDiv.className = 'context-text';
+    
+    var strong = document.createElement('strong');
+    strong.textContent = formatNum(item.val);
+    
+    var label = document.createTextNode(item.label);
+    
+    var small = document.createElement('small');
+    small.style.opacity = '0.6';
+    small.style.display = 'block';
+    small.textContent = formatCurrency(item.price);
+    
+    textDiv.appendChild(strong);
+    textDiv.appendChild(label);
+    textDiv.appendChild(small);
+    
+    div.appendChild(emojiSpan);
+    div.appendChild(textDiv);
+    grid.appendChild(div);
+  });
 }
 
 function formatNum(n) {
@@ -623,26 +659,40 @@ function fillYearTable(r) {
   var milestones = [100000, 250000, 500000, 1000000, 5000000];
   var passedMiles = {};
 
-  tbody.innerHTML = r.chartData.map(function(d) {
+  // SECURITY: DOM-API statt innerHTML für Tabellen
+  safeClear(tbody);
+  r.chartData.forEach(function(d) {
     var gain = d.invest - d.total;
     var isMile = false;
-
+    
     milestones.forEach(function(m) {
       if (d.invest >= m && !passedMiles[m]) {
         passedMiles[m] = true;
         isMile = true;
       }
     });
-
-    return '<tr class="' + (isMile ? 'milestone-row' : '') + '">' +
-      '<td>' + d.year + '</td>' +
-      '<td>' + (ageStart + d.year) + '</td>' +
-      '<td>' + formatCurrencyShort(d.total) + '</td>' +
-      '<td class="col-invest">' + formatCurrencyShort(d.invest) + '</td>' +
-      '<td>' + formatCurrencyShort(d.fiat) + '</td>' +
-      '<td class="col-gain">' + (gain > 0 ? '+' : '') + formatCurrencyShort(gain) + '</td>' +
-    '</tr>';
-  }).join('');
+    
+    var tr = document.createElement('tr');
+    if (isMile) tr.className = 'milestone-row';
+    
+    var td1 = document.createElement('td');
+    td1.textContent = d.year;
+    var td2 = document.createElement('td');
+    td2.textContent = (ageStart + d.year);
+    var td3 = document.createElement('td');
+    td3.textContent = formatCurrencyShort(d.total);
+    var td4 = document.createElement('td');
+    td4.className = 'col-invest';
+    td4.textContent = formatCurrencyShort(d.invest);
+    var td5 = document.createElement('td');
+    td5.textContent = formatCurrencyShort(d.fiat);
+    var td6 = document.createElement('td');
+    td6.className = 'col-gain';
+    td6.textContent = (gain > 0 ? '+' : '') + formatCurrencyShort(gain);
+    
+    tr.append(td1, td2, td3, td4, td5, td6);
+    tbody.appendChild(tr);
+  });
 }
 
 // //  REVERSE-RECHNER: Wann bin ich Millionär?
@@ -685,16 +735,17 @@ function calculateReverse() {
   resultEl.style.display = 'block';
 
   if (years >= maxYears) {
-    textEl.innerHTML = 'Mit diesem Szenario und ' + formatCurrencyShort(monthly) + '/Monat ist das Ziel von ' + formatCurrency(target) + ' rechnerisch nicht erreichbar. Erhöhe den monatlichen Betrag oder wähle ein renditereicheres Szenario.';
+    textEl.textContent = 'Mit diesem Szenario und ' + formatCurrencyShort(monthly) + '/Monat ist das Ziel von ' + formatCurrency(target) + ' rechnerisch nicht erreichbar. Erhöhe den monatlichen Betrag oder wähle ein renditereicheres Szenario.';
   } else {
     var reachAge = r.ageStart + years;
     var now = r.ageNow;
     var futureYears = years - r.years;
 
     if (futureYears <= 0) {
-      textEl.innerHTML = '✦ Du hättest das Ziel von <strong>' + formatCurrency(target) + '</strong> bereits nach <strong>' + years + ' Jahren</strong> (mit ' + reachAge + ') erreicht — wenn du damals gestartet wärst.';
+      // SECURITY: textContent statt innerHTML
+      textEl.textContent = '✦ Du hättest das Ziel von ' + formatCurrency(target) + ' bereits nach ' + years + ' Jahren (mit ' + reachAge + ') erreicht — wenn du damals gestartet wärst.';
     } else {
-      textEl.innerHTML = '✦ Du erreichst <strong>' + formatCurrency(target) + '</strong> in weiteren <strong>' + futureYears + ' Jahren</strong> (mit ' + (now + futureYears) + ') — wenn du <strong>jetzt</strong> mit ' + formatCurrencyShort(monthly) + '/Monat startest.';
+      textEl.textContent = '✦ Du erreichst ' + formatCurrency(target) + ' in weiteren ' + futureYears + ' Jahren (mit ' + (now + futureYears) + ') — wenn du jetzt mit ' + formatCurrencyShort(monthly) + '/Monat startest.';
     }
   }
 }

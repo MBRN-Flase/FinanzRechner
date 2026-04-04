@@ -5,7 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Finanz-Rechner – Wie sich dein Geld entwickelt</title>
   <meta name="description" content="Berechne einfach, wie sich dein Geld mit der Zeit verändert. Mit aktuellen Kursen für Bitcoin und Ethereum. Alles direkt im Browser." />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.coingecko.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.coingecko.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;">
+  
+  <!-- Security Headers (GitHub Pages compatible via meta tags) -->
+  <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains; preload">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="no-referrer">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), fullscreen=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()">
+  
   <meta name="theme-color" content="#8b5cf6">
   <meta property="og:title" content="Finanz-Rechner – Wie sich dein Geld entwickelt" />
   <meta property="og:description" content="Berechne einfach, wie sich dein Geld mit der Zeit verändert. Mit aktuellen Kursen." />
@@ -30,13 +38,10 @@
   
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('[PWA] Service Worker registered'))
-        .catch(err => console.log('[PWA] Service Worker registration failed'));
-    }
-  </script>
+  
+  <!-- Externe Scripts (CSP Compliance) -->
+  <script src="assets/js/inline-scripts.js"></script>
+  
   <style>
     /* === FINANZRECHNER THEME SYSTEM === */
     :root {
@@ -415,7 +420,7 @@
   <div class="mbrn-legal-modal">
     <div class="mbrn-legal-modal-header">
       <h3 class="mbrn-legal-modal-title">Impressum & Datenschutz</h3>
-      <button class="mbrn-legal-modal-close" onclick="closeLegalModal()" type="button">✕</button>
+      <button class="mbrn-legal-modal-close" id="legalModalClose" type="button">✕</button>
     </div>
     <div class="mbrn-legal-modal-content">
       <p><strong>Deine Daten bleiben bei dir</strong><br>Alle Berechnungen passen direkt in deinem Browser. Es werden keine Daten hochgeladen oder gespeichert.</p>
@@ -453,57 +458,7 @@
   </div>
 </footer>
 
-<script>
-  function openLegalModal() {
-    document.getElementById('legal-modal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeLegalModal() {
-    document.getElementById('legal-modal').classList.remove('active');
-    document.body.style.overflow = '';
-  }
-  document.getElementById('legal-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeLegalModal();
-  });
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeLegalModal();
-  });
-</script>
-
 <script src="app.js"></script>
 
-  <!-- Theme Toggle Script -->
-  <script>
-    (function(){
-      const saved = localStorage.getItem('fr-theme');
-      const theme = saved || 'dark';
-      document.documentElement.setAttribute('data-theme', theme);
-      
-      const btn = document.getElementById('frThemeBtn');
-      if(!btn) return;
-      
-      const isDark = saved === 'dark';
-      btn.textContent = isDark ? '☀' : '☾';
-      btn.setAttribute('aria-label', isDark ? 'Hell-Modus aktivieren' : 'Dunkel-Modus aktivieren');
-      
-      btn.addEventListener('click', function(){
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('fr-theme', next);
-        btn.textContent = next === 'dark' ? '☀' : '☾';
-        btn.setAttribute('aria-label', next === 'dark' ? 'Hell-Modus aktivieren' : 'Dunkel-Modus aktivieren');
-      });
-    })();
-  </script>
-
-  <!-- PWA Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => console.log('[PWA] Service Worker aktiv'))
-        .catch((err) => console.log('[PWA] Fehler', err));
-    }
-  </script>
 </body>
 </html>
