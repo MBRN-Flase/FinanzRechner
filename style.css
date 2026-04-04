@@ -141,7 +141,7 @@
 .input-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .input-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);opacity:.7}
 .input-value-badge{font-size:11px;color:var(--accent-main);font-weight:700;letter-spacing:.06em;
-  background:var(--accent-soft);border:1px solid rgba(139,92,246,.22);padding:2px 9px;border-radius:99px}
+  background:var(--accent-soft);border:1px solid rgba(139,92,246,.22);padding:2px 9px;border-radius:99px;position:relative;z-index:5}
 .input-hint{font-size:10px;color:var(--accent-main);letter-spacing:.06em;opacity:.8}
 .input-error{font-size:10px;color:var(--danger);letter-spacing:.06em;margin-top:2px}
 
@@ -688,6 +688,11 @@
 }
 
 /* ── RESPONSIVE ──────────────────────────────────── */
+@media(max-width:640px){
+  .input-value-badge{transform:translateY(-4px);font-size:10px;padding:3px 8px}
+  .slider{margin:6px 0}
+}
+
 @media(max-width:380px){
   .container{padding:76px 13px 60px;gap:12px}
   .details-grid{grid-template-columns:repeat(2,1fr)}
