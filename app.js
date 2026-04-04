@@ -75,9 +75,52 @@ function showToast(msg) {
   setTimeout(function () { t.classList.remove('show'); }, 3500);
 }
 
-// //  LIVE PREISE
+// //  LIVE PREISE mit Validierung
 // 
-function fetchPrices() {
+async function fetchPrices() {
+  // Prüfe ob Validator verfügbar
+  if (typeof CoinGeckoValidator === 'undefined') {
+    console.warn('[FinanzRechner] CoinGeckoValidator nicht geladen, nutze Standard-Fetch');
+    fetchPricesLegacy();
+    return;
+  }
+
+  const result = await CoinGeckoValidator.fetchSecure(
+    'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur',
+    { timeout: 8000 }
+  );
+
+  if (result.success) {
+    const data = result.data;
+    const btc = data.bitcoin.eur;
+    const eth = data.ethereum.eur;
+    
+    setText('btc-price', formatCurrency(btc));
+    setText('eth-price', formatCurrency(eth));
+    setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
+    
+    if (result.warnings && result.warnings.length > 0) {
+      console.warn('[FinanzRechner] Preis-Warnungen:', result.warnings);
+    }
+  } else {
+    console.warn('[FinanzRechner] API Fehler:', result.error);
+    setText('btc-price', '~84.000 €');
+    setText('eth-price', '~2.000 €');
+    
+    var tickerInner = document.getElementById('ticker-inner');
+    if (tickerInner && !document.getElementById('api-warning')) {
+      var warning = document.createElement('span');
+      warning.id = 'api-warning';
+      warning.className = 'ticker-label';
+      warning.style.color = 'var(--gold)';
+      warning.textContent = '(Fallback-Preise)';
+      tickerInner.appendChild(warning);
+    }
+  }
+}
+
+// Legacy Fallback ohne Validator
+function fetchPricesLegacy() {
   var ctrl = new AbortController();
   var timer = setTimeout(function () { ctrl.abort(); }, 6000);
 
@@ -85,10 +128,7 @@ function fetchPrices() {
     { signal: ctrl.signal })
     .then(function (r) {
       clearTimeout(timer);
-      if (!r.ok) {
-        if (r.status === 429) throw new Error('rate_limit');
-        throw new Error('api_error');
-      }
+      if (!r.ok) throw new Error('api_error');
       return r.json();
     })
     .then(function (d) {
@@ -96,23 +136,11 @@ function fetchPrices() {
       var eth = d && d.ethereum && d.ethereum.eur;
       setText('btc-price', btc ? formatCurrency(btc) : '~84.000 €');
       setText('eth-price', eth ? formatCurrency(eth) : '~2.000 €');
-      if (btc) setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
     })
     .catch(function () {
       clearTimeout(timer);
       setText('btc-price', '~84.000 €');
       setText('eth-price', '~2.000 €');
-
-      console.warn('CoinGecko API Fehler/Rate Limit. Nutze Fallback-Preise.');
-      var tickerInner = document.getElementById('ticker-inner');
-      if (tickerInner && !document.getElementById('api-warning')) {
-        var warning = document.createElement('span');
-        warning.id = 'api-warning';
-        warning.className = 'ticker-label';
-        warning.style.color = 'var(--gold)';
-        warning.textContent = '(Fallback-Preise)';
-        tickerInner.appendChild(warning);
-      }
     });
 }
 
