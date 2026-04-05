@@ -1410,7 +1410,8 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
   if (stroke) ctx.stroke();
 }
 
-/*    THEME TOGGLE */
+/*    THEME TOGGLE - DEPRECATED: Using theme-manager.js instead */
+/*
 function initTheme() {
   const saved = localStorage.getItem('nTheme') || 'dark';
   const btn   = document.getElementById('themeToggle');
@@ -1425,7 +1426,8 @@ function initTheme() {
     btn.setAttribute('aria-label', next === 'dark' ? 'Light Mode' : 'Dark Mode');
   });
 }
+*/
 
 document.addEventListener('DOMContentLoaded', () => {
-  initTheme();
+  // initTheme(); // DEPRECATED: Using theme-manager.js instead
 });
