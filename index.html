@@ -459,20 +459,7 @@
 <script src="https://flase-mbrn.github.io/shared/security/csp-generator.js"></script>
 <script src="https://flase-mbrn.github.io/shared/scripts/state-validator.js"></script>
 <script src="assets/js/theme-init.js"></script>
-<script>
-  // Service Worker Registration
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('sw.js')
-        .then(function(registration) {
-          console.log('[FinanzRechner] Service Worker registered');
-        })
-        .catch(function(error) {
-          console.log('[FinanzRechner] Service Worker registration failed:', error);
-        });
-    });
-  }
-</script>
+<script src="assets/js/register-sw.js"></script>
 <script src="app.js"></script>
 
 </body>
