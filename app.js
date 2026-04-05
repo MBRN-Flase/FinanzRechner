@@ -90,7 +90,7 @@ function showToast(msg) {
 async function fetchPrices() {
   // Prüfe ob Validator verfügbar
   if (typeof CoinGeckoValidator === 'undefined') {
-    console.warn('[FinanzRechner] CoinGeckoValidator nicht geladen, nutze Standard-Fetch');
+    logger.warn('[FinanzRechner] CoinGeckoValidator nicht geladen, nutze Standard-Fetch');
     fetchPricesLegacy();
     return;
   }
@@ -110,10 +110,10 @@ async function fetchPrices() {
     setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
     
     if (result.warnings && result.warnings.length > 0) {
-      console.warn('[FinanzRechner] Preis-Warnungen:', result.warnings);
+      MBRNLogger.warn('[FinanzRechner] Preis-Warnungen:', result.warnings);
     }
   } else {
-    console.warn('[FinanzRechner] API Fehler:', result.error);
+    MBRNLogger.warn('[FinanzRechner] API Fehler:', result.error);
     setText('btc-price', '~84.000 €');
     setText('eth-price', '~2.000 €');
     
@@ -268,7 +268,7 @@ function exportScreenshot() {
       link.click();
       document.body.removeChild(captureElement);
     }).catch(function(err) {
-      console.error('Screenshot failed:', err);
+      logger.error('Screenshot failed:', err);
       showToast('⚠ Screenshot konnte nicht erstellt werden');
       document.body.removeChild(captureElement);
     });

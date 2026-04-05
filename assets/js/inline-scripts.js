@@ -63,6 +63,6 @@ document.addEventListener('DOMContentLoaded', function(){
 // 4. PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js')
-    .then(() => console.log('[PWA] Service Worker aktiv'))
-    .catch((err) => console.log('[PWA] Fehler', err));
+    .then(() => logger.info('[PWA] Service Worker registered'))
+    .catch((err) => logger.warn('[PWA] Fehler', err));
 }
