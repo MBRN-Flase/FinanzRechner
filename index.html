@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Finanz-Rechner – Wie sich dein Geld entwickelt</title>
   <meta name="description" content="Berechne einfach, wie sich dein Geld mit der Zeit verändert. Mit aktuellen Kursen für Bitcoin und Ethereum. Alles direkt im Browser." />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://flase-mbrn.github.io https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.coingecko.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://flase-mbrn.github.io https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.coinbase.com https://api.kraken.com https://api.binance.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;">
   
   <!-- Security Headers (GitHub Pages compatible via meta tags) -->
   <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains; preload">
@@ -24,7 +24,6 @@
   <!-- Resource Hints -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
   
   <!-- Critical Fonts -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" />
@@ -421,7 +420,7 @@
     <div class="mbrn-legal-modal-content">
       <p><strong>Deine Daten bleiben bei dir</strong><br>Alle Berechnungen passen direkt in deinem Browser. Es werden keine Daten hochgeladen oder gespeichert.</p>
       
-      <p><strong>Aktuelle Kurse</strong><br>Wir zeigen aktuelle Kurse für Bitcoin und Ethereum von CoinGecko. Dabei wird deine IP-Adresse kurz übertragen.</p>
+      <p><strong>Aktuelle Kurse</strong><br>Wir zeigen aktuelle Kurse für Bitcoin und Ethereum von verschiedenen Krypto-Börsen (Coinbase, Kraken, Binance). Dabei wird deine IP-Adresse kurz übertragen.</p>
       
       <p><strong>Impressum (Angaben gemäß § 5 TMG)</strong></p>
 <p>Erik Klauß<br>Flottenstr. 5<br>47139 Duisburg<br>Deutschland<br>Kontakt: erikk2k5@gmail.com</p>
@@ -455,7 +454,6 @@
   </div>
 </footer>
 
-<script src="https://flase-mbrn.github.io/shared/scripts/coingecko-validator.js"></script>
 <script src="https://flase-mbrn.github.io/shared/scripts/theme-manager.js"></script>
 <script src="https://flase-mbrn.github.io/shared/utils/logger.js"></script>
 <script src="https://flase-mbrn.github.io/shared/security/csp-generator.js"></script>
