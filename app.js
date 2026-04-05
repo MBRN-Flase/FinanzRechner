@@ -110,10 +110,10 @@ async function fetchPrices() {
     setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
     
     if (result.warnings && result.warnings.length > 0) {
-      MBRNLogger.warn('[FinanzRechner] Preis-Warnungen:', result.warnings);
+      window.logger.warn('[FinanzRechner] Preis-Warnungen:', result.warnings);
     }
   } else {
-    MBRNLogger.warn('[FinanzRechner] API Fehler:', result.error);
+    window.logger.warn('[FinanzRechner] API Fehler:', result.error);
     setText('btc-price', '~84.000 €');
     setText('eth-price', '~2.000 €');
     
