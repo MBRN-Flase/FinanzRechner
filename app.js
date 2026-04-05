@@ -85,74 +85,159 @@ function showToast(msg) {
   setTimeout(function () { t.classList.remove('show'); }, 3500);
 }
 
-// //  LIVE PREISE mit Validierung
+// //  LIVE PREISE mit Multi-API Fallback & Caching
 // 
+const PRICE_CACHE_KEY = 'finanzrechner_price_cache';
+const PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5 Minuten
+const FALLBACK_PRICES = { btc: 84000, eth: 2000 };
+
 async function fetchPrices() {
-  // Prüfe ob Validator verfügbar
-  if (typeof CoinGeckoValidator === 'undefined') {
-    logger.warn('[FinanzRechner] CoinGeckoValidator nicht geladen, nutze Standard-Fetch');
-    fetchPricesLegacy();
+  // 1. Prüfe Cache
+  const cached = getCachedPrices();
+  if (cached) {
+    updatePriceDisplay(cached.btc, cached.eth, '(Cached)');
+    if (typeof window.logger !== 'undefined') {
+      window.logger.debug('[FinanzRechner] Using cached prices');
+    }
     return;
   }
 
-  const result = await CoinGeckoValidator.fetchSecure(
-    'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur',
-    { timeout: 8000 }
-  );
+  // 2. Versuche APIs in Reihenfolge
+  const apis = [
+    { name: 'Coinbase', fn: fetchCoinbasePrices },
+    { name: 'Kraken', fn: fetchKrakenPrices },
+    { name: 'Binance', fn: fetchBinancePrices }
+  ];
 
-  if (result.success) {
-    const data = result.data;
-    const btc = data.bitcoin.eur;
-    const eth = data.ethereum.eur;
-    
-    setText('btc-price', formatCurrency(btc));
-    setText('eth-price', formatCurrency(eth));
-    setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
-    
-    if (result.warnings && result.warnings.length > 0) {
-      window.logger.warn('[FinanzRechner] Preis-Warnungen:', result.warnings);
+  for (const api of apis) {
+    try {
+      if (typeof window.logger !== 'undefined') {
+        window.logger.debug('[FinanzRechner] Trying API:', api.name);
+      }
+      const result = await api.fn();
+      if (result && result.btc > 0 && result.eth > 0) {
+        cachePrices(result);
+        updatePriceDisplay(result.btc, result.eth, '');
+        return;
+      }
+    } catch (e) {
+      if (typeof window.logger !== 'undefined') {
+        window.logger.warn('[FinanzRechner] API failed:', api.name, e.message);
+      }
     }
-  } else {
-    window.logger.warn('[FinanzRechner] API Fehler:', result.error);
-    setText('btc-price', '~84.000 €');
-    setText('eth-price', '~2.000 €');
-    
-    var tickerInner = document.getElementById('ticker-inner');
-    if (tickerInner && !document.getElementById('api-warning')) {
-      var warning = document.createElement('span');
-      warning.id = 'api-warning';
-      warning.className = 'ticker-label';
-      warning.style.color = 'var(--gold)';
-      warning.textContent = '(Fallback-Preise)';
-      tickerInner.appendChild(warning);
+  }
+
+  // 3. Alle APIs failed - nutze Fallback
+  if (typeof window.logger !== 'undefined') {
+    window.logger.error('[FinanzRechner] All APIs failed, using fallback prices');
+  }
+  updatePriceDisplay(FALLBACK_PRICES.btc, FALLBACK_PRICES.eth, '(Fallback)');
+}
+
+function getCachedPrices() {
+  try {
+    const cache = localStorage.getItem(PRICE_CACHE_KEY);
+    if (!cache) return null;
+    const data = JSON.parse(cache);
+    if (Date.now() - data.timestamp < PRICE_CACHE_DURATION) {
+      return data.prices;
     }
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
+function cachePrices(prices) {
+  try {
+    localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({
+      timestamp: Date.now(),
+      prices: prices
+    }));
+  } catch (e) { /* ignore */ }
+}
+
+function updatePriceDisplay(btc, eth, suffix) {
+  setText('btc-price', formatCurrency(btc) + (suffix ? ' ' + suffix : ''));
+  setText('eth-price', formatCurrency(eth) + (suffix ? ' ' + suffix : ''));
+  setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
+}
+
+// Coinbase API (10.000/h Limit, sehr stabil)
+async function fetchCoinbasePrices() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  
+  try {
+    const res = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=BTC', {
+      signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('coinbase_error');
+    const data = await res.json();
+    const btc = parseFloat(data.data.rates.EUR);
+    
+    // ETH holen
+    const res2 = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=ETH', {
+      signal: ctrl.signal
+    });
+    if (!res2.ok) throw new Error('coinbase_eth_error');
+    const data2 = await res2.json();
+    const eth = parseFloat(data2.data.rates.EUR);
+    
+    return { btc, eth };
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
   }
 }
 
-// Legacy Fallback ohne Validator
-function fetchPricesLegacy() {
-  var ctrl = new AbortController();
-  var timer = setTimeout(function () { ctrl.abort(); }, 6000);
-
-  fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur',
-    { signal: ctrl.signal })
-    .then(function (r) {
-      clearTimeout(timer);
-      if (!r.ok) throw new Error('api_error');
-      return r.json();
-    })
-    .then(function (d) {
-      var btc = d && d.bitcoin && d.bitcoin.eur;
-      var eth = d && d.ethereum && d.ethereum.eur;
-      setText('btc-price', btc ? formatCurrency(btc) : '~84.000 €');
-      setText('eth-price', eth ? formatCurrency(eth) : '~2.000 €');
-    })
-    .catch(function () {
-      clearTimeout(timer);
-      setText('btc-price', '~84.000 €');
-      setText('eth-price', '~2.000 €');
+// Kraken API (kein dokumentiertes Limit, sehr zuverlässig)
+async function fetchKrakenPrices() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  
+  try {
+    const res = await fetch('https://api.kraken.com/0/public/Ticker?pair=XXBTZEUR,XETHZEUR', {
+      signal: ctrl.signal
     });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('kraken_error');
+    const data = await res.json();
+    if (data.error && data.error.length > 0) throw new Error(data.error[0]);
+    
+    const btc = parseFloat(data.result.XXBTZEUR.c[0]);
+    const eth = parseFloat(data.result.XETHZEUR.c[0]);
+    
+    return { btc, eth };
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
 }
+
+// Binance API (1.200/1min Limit)
+async function fetchBinancePrices() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  
+  try {
+    const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCEUR","ETHEUR"]', {
+      signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('binance_error');
+    const data = await res.json();
+    
+    const btc = parseFloat(data.find(p => p.symbol === 'BTCEUR').price);
+    const eth = parseFloat(data.find(p => p.symbol === 'ETHEUR').price);
+    
+    return { btc, eth };
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+// Alte Legacy Funktion entfernt - nicht mehr benötigt
 
 // //  SLIDER INIT
 // 
