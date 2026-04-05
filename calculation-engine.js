@@ -361,39 +361,42 @@ const testInput = {
   taxRate: 18.46
 };
 
-console.log('=== FinanzRechner Calculation Test ===\n');
-console.log('Input:', testInput);
-console.log('Runtime:', testInput.currentAge - testInput.startAge, 'years\n');
+// Test-Code für Development - Wird in Production entfernt
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  console.log('=== FinanzRechner Calculation Test ===\n');
+  console.log('Input:', testInput);
+  console.log('Runtime:', testInput.currentAge - testInput.startAge, 'years\n');
 
-// Run yearly calculation
-const result = calculateFinancialScenario(testInput);
+  // Run yearly calculation
+  const result = calculateFinancialScenario(testInput);
 
-console.log('=== Results (Yearly Calculation) ===');
-console.log('Total Contributions:', formatCurrency(result.totalContributions));
-console.log('Nominal End Value:', formatCurrency(result.nominalEndValue));
-console.log('Total Profit:', formatCurrency(result.totalProfit));
-console.log('Tax Amount:', formatCurrency(result.taxAmount));
-console.log('Net End Value:', formatCurrency(result.netEndValue));
-console.log('Real Value (Cash on Account):', formatCurrency(result.realValueCashOnAccount));
-console.log('Purchasing Power (Nominal):', formatCurrency(result.purchasingPowerNominal));
-console.log('Purchasing Power (Net):', formatCurrency(result.purchasingPowerNet));
-console.log('Effective Return:', formatPercent(result.effectiveReturn));
+  console.log('=== Results (Yearly Calculation) ===');
+  console.log('Total Contributions:', formatCurrency(result.totalContributions));
+  console.log('Nominal End Value:', formatCurrency(result.nominalEndValue));
+  console.log('Total Profit:', formatCurrency(result.totalProfit));
+  console.log('Tax Amount:', formatCurrency(result.taxAmount));
+  console.log('Net End Value:', formatCurrency(result.netEndValue));
+  console.log('Real Value (Cash on Account):', formatCurrency(result.realValueCashOnAccount));
+  console.log('Purchasing Power (Nominal):', formatCurrency(result.purchasingPowerNominal));
+  console.log('Purchasing Power (Net):', formatCurrency(result.purchasingPowerNet));
+  console.log('Effective Return:', formatPercent(result.effectiveReturn));
 
-console.log('\n=== First 5 Years Breakdown ===');
-result.yearlyBreakdown.slice(0, 5).forEach(year => {
-  console.log(`Year ${year.year} (Age ${year.age}): ` +
-    `Contribution: ${formatCurrency(year.yearlyContribution)}, ` +
-    `Capital: ${formatCurrency(year.capitalAtEnd)}, ` +
-    `Return: ${formatCurrency(year.returnAmount)}`);
-});
+  console.log('\n=== First 5 Years Breakdown ===');
+  result.yearlyBreakdown.slice(0, 5).forEach(year => {
+    console.log(`Year ${year.year} (Age ${year.age}): ` +
+      `Contribution: ${formatCurrency(year.yearlyContribution)}, ` +
+      `Capital: ${formatCurrency(year.capitalAtEnd)}, ` +
+      `Return: ${formatCurrency(year.returnAmount)}`);
+  });
 
-console.log('\n=== Last 3 Years Breakdown ===');
-result.yearlyBreakdown.slice(-3).forEach(year => {
-  console.log(`Year ${year.year} (Age ${year.age}): ` +
-    `Contribution: ${formatCurrency(year.yearlyContribution)}, ` +
-    `Capital: ${formatCurrency(year.capitalAtEnd)}, ` +
-    `Return: ${formatCurrency(year.returnAmount)}`);
-});
+  console.log('\n=== Last 3 Years Breakdown ===');
+  result.yearlyBreakdown.slice(-3).forEach(year => {
+    console.log(`Year ${year.year} (Age ${year.age}): ` +
+      `Contribution: ${formatCurrency(year.yearlyContribution)}, ` +
+      `Capital: ${formatCurrency(year.capitalAtEnd)}, ` +
+      `Return: ${formatCurrency(year.returnAmount)}`);
+  });
+}
 
 // Export for use in FinanzRechner
 if (typeof module !== 'undefined' && module.exports) {
