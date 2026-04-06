@@ -20,7 +20,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(APP_SHELL))
-      .catch(err => { /* Silent fail - SW cache error */ })
+      .catch(err => console.error('[SW] Cache installation failed:', err))
   );
 });
 

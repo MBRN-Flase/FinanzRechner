@@ -1,32 +1,7 @@
-// MBRN FINANZ-RECHNER v1.4 — Security Enhanced
-
-'use strict';
-
-// ═══════════════════════════════════════════════════════════
-// SECURITY UTILITIES
-// ═══════════════════════════════════════════════════════════
-
-function escapeHtml(str) {
-  if (!str || typeof str !== 'string') return '';
-  return str.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-function safeSetText(elementOrId, text) {
-  const element = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
-  if (!element) return;
-  element.textContent = String(text ?? '');
-}
-
-function safeClear(element) {
-  if (!element) return;
-  while (element.firstChild) {
-    element.removeChild(element.firstChild);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// END SECURITY UTILITIES
-// ═══════════════════════════════════════════════════════════
+// //  MBRN FINANZ-RECHNER v1.4 — Inflation sichtbar & wirksam
+//  Fix: Inflation beeinflusst jetzt Hauptwert, Detailwerte,
+//       Chartdaten und Kontext-Vergleich deutlich sichtbar
+// 'use strict';
 
 // Korrigierte Szenarien mit realistischeren Wachstumsraten
 const SCENARIOS = {
@@ -85,161 +60,49 @@ function showToast(msg) {
   setTimeout(function () { t.classList.remove('show'); }, 3500);
 }
 
-// //  LIVE PREISE mit Multi-API Fallback & Caching
+// //  LIVE PREISE
 // 
-const PRICE_CACHE_KEY = 'finanzrechner_price_cache';
-const PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5 Minuten
-const FALLBACK_PRICES = { btc: 84000, eth: 2000 };
+function fetchPrices() {
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () { ctrl.abort(); }, 6000);
 
-async function fetchPrices() {
-  // 1. Prüfe Cache
-  const cached = getCachedPrices();
-  if (cached) {
-    updatePriceDisplay(cached.btc, cached.eth, '(Cached)');
-    if (typeof window.logger !== 'undefined') {
-      window.logger.debug('[FinanzRechner] Using cached prices');
-    }
-    return;
-  }
-
-  // 2. Versuche APIs in Reihenfolge
-  const apis = [
-    { name: 'Coinbase', fn: fetchCoinbasePrices },
-    { name: 'Kraken', fn: fetchKrakenPrices },
-    { name: 'Binance', fn: fetchBinancePrices }
-  ];
-
-  for (const api of apis) {
-    try {
-      if (typeof window.logger !== 'undefined') {
-        window.logger.debug('[FinanzRechner] Trying API:', api.name);
+  fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur',
+    { signal: ctrl.signal })
+    .then(function (r) {
+      clearTimeout(timer);
+      if (!r.ok) {
+        if (r.status === 429) throw new Error('rate_limit');
+        throw new Error('api_error');
       }
-      const result = await api.fn();
-      if (result && result.btc > 0 && result.eth > 0) {
-        cachePrices(result);
-        updatePriceDisplay(result.btc, result.eth, '');
-        return;
+      return r.json();
+    })
+    .then(function (d) {
+      var btc = d && d.bitcoin && d.bitcoin.eur;
+      var eth = d && d.ethereum && d.ethereum.eur;
+      setText('btc-price', btc ? formatCurrency(btc) : '~84.000 €');
+      setText('eth-price', eth ? formatCurrency(eth) : '~2.000 €');
+      if (btc) setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
+    })
+    .catch(function () {
+      clearTimeout(timer);
+      setText('btc-price', '~84.000 €');
+      setText('eth-price', '~2.000 €');
+
+      console.warn('CoinGecko API Fehler/Rate Limit. Nutze Fallback-Preise.');
+      var tickerInner = document.getElementById('ticker-inner');
+      if (tickerInner && !document.getElementById('api-warning')) {
+        var warning = document.createElement('span');
+        warning.id = 'api-warning';
+        warning.className = 'ticker-label';
+        warning.style.color = 'var(--gold)';
+        warning.textContent = '(Fallback-Preise)';
+        tickerInner.appendChild(warning);
       }
-    } catch (e) {
-      if (typeof window.logger !== 'undefined') {
-        window.logger.warn('[FinanzRechner] API failed:', api.name, e.message);
-      }
-    }
-  }
-
-  // 3. Alle APIs failed - nutze Fallback
-  if (typeof window.logger !== 'undefined') {
-    window.logger.error('[FinanzRechner] All APIs failed, using fallback prices');
-  }
-  updatePriceDisplay(FALLBACK_PRICES.btc, FALLBACK_PRICES.eth, '(Fallback)');
-}
-
-function getCachedPrices() {
-  try {
-    const cache = localStorage.getItem(PRICE_CACHE_KEY);
-    if (!cache) return null;
-    const data = JSON.parse(cache);
-    if (Date.now() - data.timestamp < PRICE_CACHE_DURATION) {
-      return data.prices;
-    }
-  } catch (e) { /* ignore */ }
-  return null;
-}
-
-function cachePrices(prices) {
-  try {
-    localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({
-      timestamp: Date.now(),
-      prices: prices
-    }));
-  } catch (e) { /* ignore */ }
-}
-
-function updatePriceDisplay(btc, eth, suffix) {
-  setText('btc-price', formatCurrency(btc) + (suffix ? ' ' + suffix : ''));
-  setText('eth-price', formatCurrency(eth) + (suffix ? ' ' + suffix : ''));
-  setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
-}
-
-// Coinbase API (10.000/h Limit, sehr stabil)
-async function fetchCoinbasePrices() {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 5000);
-  
-  try {
-    const res = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=BTC', {
-      signal: ctrl.signal
     });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error('coinbase_error');
-    const data = await res.json();
-    const btc = parseFloat(data.data.rates.EUR);
-    
-    // ETH holen
-    const res2 = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=ETH', {
-      signal: ctrl.signal
-    });
-    if (!res2.ok) throw new Error('coinbase_eth_error');
-    const data2 = await res2.json();
-    const eth = parseFloat(data2.data.rates.EUR);
-    
-    return { btc, eth };
-  } catch (e) {
-    clearTimeout(timer);
-    throw e;
-  }
 }
 
-// Kraken API (kein dokumentiertes Limit, sehr zuverlässig)
-async function fetchKrakenPrices() {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 5000);
-  
-  try {
-    const res = await fetch('https://api.kraken.com/0/public/Ticker?pair=XXBTZEUR,XETHZEUR', {
-      signal: ctrl.signal
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error('kraken_error');
-    const data = await res.json();
-    if (data.error && data.error.length > 0) throw new Error(data.error[0]);
-    
-    const btc = parseFloat(data.result.XXBTZEUR.c[0]);
-    const eth = parseFloat(data.result.XETHZEUR.c[0]);
-    
-    return { btc, eth };
-  } catch (e) {
-    clearTimeout(timer);
-    throw e;
-  }
-}
-
-// Binance API (1.200/1min Limit)
-async function fetchBinancePrices() {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 5000);
-  
-  try {
-    const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCEUR","ETHEUR"]', {
-      signal: ctrl.signal
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error('binance_error');
-    const data = await res.json();
-    
-    const btc = parseFloat(data.find(p => p.symbol === 'BTCEUR').price);
-    const eth = parseFloat(data.find(p => p.symbol === 'ETHEUR').price);
-    
-    return { btc, eth };
-  } catch (e) {
-    clearTimeout(timer);
-    throw e;
-  }
-}
-
-// Alte Legacy Funktion entfernt - nicht mehr benötigt
-
-// SLIDER INIT
+// //  SLIDER INIT
+// 
 function initSliders() {
   linkSlider('slider-age-now',   'age-now',     'badge-age-now',   function(v){ return v + ' Jahre'; });
   linkSlider('slider-age-start', 'age-start',   'badge-age-start', function(v){ return v + ' Jahre'; });
@@ -352,7 +215,7 @@ function exportScreenshot() {
       link.click();
       document.body.removeChild(captureElement);
     }).catch(function(err) {
-      logger.error('Screenshot failed:', err);
+      console.error('Screenshot failed:', err);
       showToast('⚠ Screenshot konnte nicht erstellt werden');
       document.body.removeChild(captureElement);
     });
@@ -370,12 +233,15 @@ function updateSliderFill(sl) {
   sl.style.background = 'linear-gradient(90deg,#b388ff ' + pct + '%,rgba(100,70,200,.2) ' + pct + '%)';
 }
 
+// Debounced Auto-Neuberechnung (300ms nach letzter Änderung)
 function scheduleRecalc() {
   if (!lastResult) return;
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(calculate, 300);
 }
 
+// //  BERECHNUNG
+// 
 function calculate() {
     // 1. Inputs abgreifen (Sicherstellen, dass es Zahlen sind)
     const ageNow = parseFloat(getVal('age-now')) || 0;
@@ -560,7 +426,8 @@ function calculate() {
     }, 160);
 }
 
-// ERGEBNIS ANZEIGEN
+// //  ERGEBNIS ANZEIGEN
+// 
 function showResult(r) {
   var section = document.getElementById('result-section');
   if (!section) return;
@@ -679,7 +546,8 @@ function showResult(r) {
   }, 130);
 }
 
-// ANIMIERTER COUNTER
+// //  ANIMIERTER COUNTER
+// 
 function animateCounter(id, targetVal) {
   var el = document.getElementById(id);
   if (!el) return;
@@ -704,7 +572,8 @@ function animateCounter(id, targetVal) {
   });
 }
 
-// KONTEXT-VERGLEICH
+// //  KONTEXT-VERGLEICH
+// 
 function renderContextBox(val, netEndValue) {
   var box = document.getElementById('context-box');
   var grid = document.getElementById('context-grid');
@@ -726,37 +595,16 @@ function renderContextBox(val, netEndValue) {
     { emoji: '✈️', label: 'Weltreisen (ca. 5.000€)', val: Math.round(compareValue / worldTrip), price: worldTrip },
   ];
 
-  // SECURITY: DOM-API statt innerHTML
-  safeClear(grid);
-  items.forEach(function(item) {
-    var div = document.createElement('div');
-    div.className = 'context-item';
-    
-    var emojiSpan = document.createElement('span');
-    emojiSpan.className = 'context-emoji';
-    emojiSpan.textContent = item.emoji;
-    
-    var textDiv = document.createElement('div');
-    textDiv.className = 'context-text';
-    
-    var strong = document.createElement('strong');
-    strong.textContent = formatNum(item.val);
-    
-    var label = document.createTextNode(item.label);
-    
-    var small = document.createElement('small');
-    small.style.opacity = '0.6';
-    small.style.display = 'block';
-    small.textContent = formatCurrency(item.price);
-    
-    textDiv.appendChild(strong);
-    textDiv.appendChild(label);
-    textDiv.appendChild(small);
-    
-    div.appendChild(emojiSpan);
-    div.appendChild(textDiv);
-    grid.appendChild(div);
-  });
+  grid.innerHTML = items.map(function(item) {
+    return '<div class="context-item">' +
+      '<span class="context-emoji">' + item.emoji + '</span>' +
+      '<div class="context-text">' +
+        '<strong>' + formatNum(item.val) + '</strong>' +
+        item.label +
+        '<small style="opacity:0.6;display:block">' + formatCurrency(item.price) + '</small>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function formatNum(n) {
@@ -765,7 +613,8 @@ function formatNum(n) {
   return n.toFixed(1) + ' ×';
 }
 
-// JAHRESTABELLE
+// //  JAHRESTABELLE
+// 
 function fillYearTable(r) {
   var tbody = document.getElementById('year-table-body');
   if (!tbody) return;
@@ -774,43 +623,30 @@ function fillYearTable(r) {
   var milestones = [100000, 250000, 500000, 1000000, 5000000];
   var passedMiles = {};
 
-  // SECURITY: DOM-API statt innerHTML für Tabellen
-  safeClear(tbody);
-  r.chartData.forEach(function(d) {
+  tbody.innerHTML = r.chartData.map(function(d) {
     var gain = d.invest - d.total;
     var isMile = false;
-    
+
     milestones.forEach(function(m) {
       if (d.invest >= m && !passedMiles[m]) {
         passedMiles[m] = true;
         isMile = true;
       }
     });
-    
-    var tr = document.createElement('tr');
-    if (isMile) tr.className = 'milestone-row';
-    
-    var td1 = document.createElement('td');
-    td1.textContent = d.year;
-    var td2 = document.createElement('td');
-    td2.textContent = (ageStart + d.year);
-    var td3 = document.createElement('td');
-    td3.textContent = formatCurrencyShort(d.total);
-    var td4 = document.createElement('td');
-    td4.className = 'col-invest';
-    td4.textContent = formatCurrencyShort(d.invest);
-    var td5 = document.createElement('td');
-    td5.textContent = formatCurrencyShort(d.fiat);
-    var td6 = document.createElement('td');
-    td6.className = 'col-gain';
-    td6.textContent = (gain > 0 ? '+' : '') + formatCurrencyShort(gain);
-    
-    tr.append(td1, td2, td3, td4, td5, td6);
-    tbody.appendChild(tr);
-  });
+
+    return '<tr class="' + (isMile ? 'milestone-row' : '') + '">' +
+      '<td>' + d.year + '</td>' +
+      '<td>' + (ageStart + d.year) + '</td>' +
+      '<td>' + formatCurrencyShort(d.total) + '</td>' +
+      '<td class="col-invest">' + formatCurrencyShort(d.invest) + '</td>' +
+      '<td>' + formatCurrencyShort(d.fiat) + '</td>' +
+      '<td class="col-gain">' + (gain > 0 ? '+' : '') + formatCurrencyShort(gain) + '</td>' +
+    '</tr>';
+  }).join('');
 }
 
-// REVERSE-RECHNER: Wann bin ich Millionär?
+// //  REVERSE-RECHNER: Wann bin ich Millionär?
+// 
 function calculateReverse() {
   if (!lastResult) {
     showToast('⚠ Bitte zuerst berechnen');
@@ -849,22 +685,22 @@ function calculateReverse() {
   resultEl.style.display = 'block';
 
   if (years >= maxYears) {
-    textEl.textContent = 'Mit diesem Szenario und ' + formatCurrencyShort(monthly) + '/Monat ist das Ziel von ' + formatCurrency(target) + ' rechnerisch nicht erreichbar. Erhöhe den monatlichen Betrag oder wähle ein renditereicheres Szenario.';
+    textEl.innerHTML = 'Mit diesem Szenario und ' + formatCurrencyShort(monthly) + '/Monat ist das Ziel von ' + formatCurrency(target) + ' rechnerisch nicht erreichbar. Erhöhe den monatlichen Betrag oder wähle ein renditereicheres Szenario.';
   } else {
     var reachAge = r.ageStart + years;
     var now = r.ageNow;
     var futureYears = years - r.years;
 
     if (futureYears <= 0) {
-      // SECURITY: textContent statt innerHTML
-      textEl.textContent = '✦ Du hättest das Ziel von ' + formatCurrency(target) + ' bereits nach ' + years + ' Jahren (mit ' + reachAge + ') erreicht — wenn du damals gestartet wärst.';
+      textEl.innerHTML = '✦ Du hättest das Ziel von <strong>' + formatCurrency(target) + '</strong> bereits nach <strong>' + years + ' Jahren</strong> (mit ' + reachAge + ') erreicht — wenn du damals gestartet wärst.';
     } else {
-      textEl.textContent = '✦ Du erreichst ' + formatCurrency(target) + ' in weiteren ' + futureYears + ' Jahren (mit ' + (now + futureYears) + ') — wenn du jetzt mit ' + formatCurrencyShort(monthly) + '/Monat startest.';
+      textEl.innerHTML = '✦ Du erreichst <strong>' + formatCurrency(target) + '</strong> in weiteren <strong>' + futureYears + ' Jahren</strong> (mit ' + (now + futureYears) + ') — wenn du <strong>jetzt</strong> mit ' + formatCurrencyShort(monthly) + '/Monat startest.';
     }
   }
 }
 
 // //  CHART (mit Milestone-Linien)
+// 
 function drawChart(data, maxInvest) {
   var canvas = document.getElementById('growth-chart');
   if (!canvas || !canvas.getContext) return;
@@ -999,7 +835,8 @@ function drawChart(data, maxInvest) {
   });
 }
 
-// INSIGHT TEXT
+// //  INSIGHT TEXT
+// 
 function buildInsight(r) {
   var s = SCENARIOS[activeScenario].name;
   var diff = formatCurrency(r.realValue - r.fiatVal);
@@ -1019,7 +856,8 @@ function buildInsight(r) {
   return base;
 }
 
-// SHARE IMAGE
+// //  SHARE IMAGE
+// 
 function generateShareImage(fmt) {
   if (!lastResult) {
     showToast('⚠ Bitte zuerst berechnen');
@@ -1211,7 +1049,8 @@ function drawInsBox(ctx, r, W, y, boxH) {
   wrapText(ctx, ins, W / 2, y + boxH / 2 - 16, W - 160, 32);
 }
 
-// SHARE TEXT
+// //  SHARE TEXT
+// 
 function buildShareText() {
   if (!lastResult) return '';
   var r = lastResult, url = window.location.href.split('?')[0];
@@ -1224,7 +1063,8 @@ function buildShareText() {
   ].join('\n');
 }
 
-// EVENTS
+// //  EVENTS
+// 
 function bindEvents() {
   // Szenarien
   document.querySelectorAll('.scenario-btn').forEach(function(btn) {
@@ -1481,8 +1321,7 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
   if (stroke) ctx.stroke();
 }
 
-/*    THEME TOGGLE - DEPRECATED: Using theme-manager.js instead */
-/*
+/*    THEME TOGGLE */
 function initTheme() {
   const saved = localStorage.getItem('nTheme') || 'dark';
   const btn   = document.getElementById('themeToggle');
@@ -1497,7 +1336,7 @@ function initTheme() {
     btn.setAttribute('aria-label', next === 'dark' ? 'Light Mode' : 'Dark Mode');
   });
 }
-*/
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
 });
