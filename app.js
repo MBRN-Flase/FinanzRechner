@@ -239,8 +239,7 @@ async function fetchBinancePrices() {
 
 // Alte Legacy Funktion entfernt - nicht mehr benötigt
 
-// //  SLIDER INIT
-// 
+// SLIDER INIT
 function initSliders() {
   linkSlider('slider-age-now',   'age-now',     'badge-age-now',   function(v){ return v + ' Jahre'; });
   linkSlider('slider-age-start', 'age-start',   'badge-age-start', function(v){ return v + ' Jahre'; });
@@ -371,15 +370,12 @@ function updateSliderFill(sl) {
   sl.style.background = 'linear-gradient(90deg,#b388ff ' + pct + '%,rgba(100,70,200,.2) ' + pct + '%)';
 }
 
-// Debounced Auto-Neuberechnung (300ms nach letzter Änderung)
 function scheduleRecalc() {
   if (!lastResult) return;
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(calculate, 300);
 }
 
-// //  BERECHNUNG
-// 
 function calculate() {
     // 1. Inputs abgreifen (Sicherstellen, dass es Zahlen sind)
     const ageNow = parseFloat(getVal('age-now')) || 0;
@@ -564,8 +560,7 @@ function calculate() {
     }, 160);
 }
 
-// //  ERGEBNIS ANZEIGEN
-// 
+// ERGEBNIS ANZEIGEN
 function showResult(r) {
   var section = document.getElementById('result-section');
   if (!section) return;
@@ -684,8 +679,7 @@ function showResult(r) {
   }, 130);
 }
 
-// //  ANIMIERTER COUNTER
-// 
+// ANIMIERTER COUNTER
 function animateCounter(id, targetVal) {
   var el = document.getElementById(id);
   if (!el) return;
@@ -710,8 +704,7 @@ function animateCounter(id, targetVal) {
   });
 }
 
-// //  KONTEXT-VERGLEICH
-// 
+// KONTEXT-VERGLEICH
 function renderContextBox(val, netEndValue) {
   var box = document.getElementById('context-box');
   var grid = document.getElementById('context-grid');
@@ -772,8 +765,7 @@ function formatNum(n) {
   return n.toFixed(1) + ' ×';
 }
 
-// //  JAHRESTABELLE
-// 
+// JAHRESTABELLE
 function fillYearTable(r) {
   var tbody = document.getElementById('year-table-body');
   if (!tbody) return;
@@ -818,8 +810,7 @@ function fillYearTable(r) {
   });
 }
 
-// //  REVERSE-RECHNER: Wann bin ich Millionär?
-// 
+// REVERSE-RECHNER: Wann bin ich Millionär?
 function calculateReverse() {
   if (!lastResult) {
     showToast('⚠ Bitte zuerst berechnen');
@@ -874,7 +865,6 @@ function calculateReverse() {
 }
 
 // //  CHART (mit Milestone-Linien)
-// 
 function drawChart(data, maxInvest) {
   var canvas = document.getElementById('growth-chart');
   if (!canvas || !canvas.getContext) return;
@@ -1009,8 +999,7 @@ function drawChart(data, maxInvest) {
   });
 }
 
-// //  INSIGHT TEXT
-// 
+// INSIGHT TEXT
 function buildInsight(r) {
   var s = SCENARIOS[activeScenario].name;
   var diff = formatCurrency(r.realValue - r.fiatVal);
@@ -1030,8 +1019,7 @@ function buildInsight(r) {
   return base;
 }
 
-// //  SHARE IMAGE
-// 
+// SHARE IMAGE
 function generateShareImage(fmt) {
   if (!lastResult) {
     showToast('⚠ Bitte zuerst berechnen');
@@ -1223,8 +1211,7 @@ function drawInsBox(ctx, r, W, y, boxH) {
   wrapText(ctx, ins, W / 2, y + boxH / 2 - 16, W - 160, 32);
 }
 
-// //  SHARE TEXT
-// 
+// SHARE TEXT
 function buildShareText() {
   if (!lastResult) return '';
   var r = lastResult, url = window.location.href.split('?')[0];
@@ -1237,8 +1224,7 @@ function buildShareText() {
   ].join('\n');
 }
 
-// //  EVENTS
-// 
+// EVENTS
 function bindEvents() {
   // Szenarien
   document.querySelectorAll('.scenario-btn').forEach(function(btn) {
@@ -1514,5 +1500,4 @@ function initTheme() {
 */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // initTheme(); // DEPRECATED: Using theme-manager.js instead
 });

@@ -349,57 +349,6 @@ function formatPercent(value, decimals = 2) {
   return value.toFixed(decimals).replace('.', ',') + '%';
 }
 
-// Test example with the provided values
-const testInput = {
-  currentAge: 47,
-  startAge: 18,
-  monthlyContribution: 1500,
-  yearlyDynamicPercent: 2.0,
-  startCapital: 1000,
-  returnRatePA: 10.2,
-  inflationRatePA: 7.0,
-  taxRate: 18.46
-};
-
-// Test-Code für Development - Wird in Production entfernt
-if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-  if (window.MBRNLogger) {
-    window.MBRNLogger.debug('=== FinanzRechner Calculation Test ===\n');
-    window.MBRNLogger.debug('Input:', testInput);
-    window.MBRNLogger.debug('Runtime:', testInput.currentAge - testInput.startAge, 'years\n');
-
-    // Run yearly calculation
-    const result = calculateFinancialScenario(testInput);
-
-    window.MBRNLogger.debug('=== Results (Yearly Calculation) ===');
-    window.MBRNLogger.debug('Total Contributions:', formatCurrency(result.totalContributions));
-    window.MBRNLogger.debug('Nominal End Value:', formatCurrency(result.nominalEndValue));
-    window.MBRNLogger.debug('Total Profit:', formatCurrency(result.totalProfit));
-    window.MBRNLogger.debug('Tax Amount:', formatCurrency(result.taxAmount));
-    window.MBRNLogger.debug('Net End Value:', formatCurrency(result.netEndValue));
-    window.MBRNLogger.debug('Real Value (Cash on Account):', formatCurrency(result.realValueCashOnAccount));
-    window.MBRNLogger.debug('Purchasing Power (Nominal):', formatCurrency(result.purchasingPowerNominal));
-    window.MBRNLogger.debug('Purchasing Power (Net):', formatCurrency(result.purchasingPowerNet));
-    window.MBRNLogger.debug('Effective Return:', formatPercent(result.effectiveReturn));
-
-    window.MBRNLogger.debug('\n=== First 5 Years Breakdown ===');
-    result.yearlyBreakdown.slice(0, 5).forEach(year => {
-      window.MBRNLogger.debug(`Year ${year.year} (Age ${year.age}): ` +
-        `Contribution: ${formatCurrency(year.yearlyContribution)}, ` +
-        `Capital: ${formatCurrency(year.capitalAtEnd)}, ` +
-        `Return: ${formatCurrency(year.returnAmount)}`);
-    });
-
-    window.MBRNLogger.debug('\n=== Last 3 Years Breakdown ===');
-    result.yearlyBreakdown.slice(-3).forEach(year => {
-      window.MBRNLogger.debug(`Year ${year.year} (Age ${year.age}): ` +
-        `Contribution: ${formatCurrency(year.yearlyContribution)}, ` +
-        `Capital: ${formatCurrency(year.capitalAtEnd)}, ` +
-        `Return: ${formatCurrency(year.returnAmount)}`);
-    });
-  }
-}
-
 // Export for use in FinanzRechner
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
