@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Impressum | FinanzRechner</title>
-  <meta name="description" content="Impressum des FinanzRechners.">
-  <meta name="robots" content="index, follow">
+  <title>Impressum | Finanz Rechner</title>
+  <meta name="description" content="Impressum des Finanz Rechners.">
   <link rel="canonical" href="https://flase-mbrn.github.io/FinanzRechner/impressum.html">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -43,30 +42,55 @@
       <section class="legal-section">
         <h2>Angaben gemäß § 5 TMG</h2>
         <div class="legal-address">
-          <strong>Max Mustermann</strong><br>
-          Musterstraße 1<br>
-          12345 Musterstadt<br>
+          <strong>Erik Klauß</strong><br>
+          Flottenstr. 5<br>
+          47139 Duisburg<br>
           Deutschland
         </div>
       </section>
 
       <section class="legal-section">
         <h2>Kontakt</h2>
-        <p>E-Mail: <a href="mailto:kontakt@mbrn-tools.de">kontakt@mbrn-tools.de</a></p>
+        <p>
+          E-Mail: <a href="mailto:erikk2k5@gmail.com">erikk2k5@gmail.com</a>
+        </p>
       </section>
 
       <section class="legal-section">
         <h2>Verantwortlich für den Inhalt</h2>
-        <p>Max Mustermann<br>(Anschrift wie oben)</p>
+        <p>
+          Erik Klauß<br>
+          (Anschrift wie oben)
+        </p>
       </section>
 
       <section class="legal-section">
         <h2>Haftungsausschluss</h2>
-        <p>Die auf dieser Website bereitgestellten Informationen und Tools dienen ausschließlich zu Informationszwecken und stellen keine Finanzberatung dar. Trotz sorgfältiger Prüfung übernehmen wir keine Haftung für die Richtigkeit, Vollständigkeit und Aktualität der bereitgestellten Daten.</p>
+        <p>
+          Die Inhalte dieser Website wurden mit größtmöglicher Sorgfalt erstellt. 
+          Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte übernehmen 
+          wir jedoch keine Gewähr.
+        </p>
+        <p>
+          Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte 
+          auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich.
+        </p>
+      </section>
+
+      <section class="legal-section">
+        <h2>EU-Streitschlichtung</h2>
+        <p>
+          Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: 
+          <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer">https://ec.europa.eu/consumers/odr</a>
+        </p>
+        <p>
+          Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor 
+          einer Verbraucherschlichtungsstelle teilzunehmen.
+        </p>
       </section>
 
       <div class="legal-back">
-        <a href="index.html" class="btn-back">← Zurück zum Rechner</a>
+        <a href="index.html" class="btn-back">← Zurück zum Finanz Rechner</a>
       </div>
     </div>
   </main>
@@ -85,7 +109,7 @@
         <span class="mbrn-footer-divider">|</span>
         <a href="datenschutz.html" class="mbrn-footer-link">Datenschutz</a>
       </div>
-      <p class="mbrn-footer-copyright">© 2026 MBRN. Alle Berechnungen erfolgen lokal.</p>
+      <p class="mbrn-footer-copyright"> 2026 MBRN. Alle Berechnungen erfolgen lokal.</p>
     </div>
   </footer>
 
@@ -94,14 +118,14 @@
     const themeToggle = document.getElementById('themeToggle');
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+    themeToggle.textContent = savedTheme === 'dark' ? '' : '';
     
     themeToggle.addEventListener('click', () => {
       const current = document.documentElement.getAttribute('data-theme');
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
-      themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+      themeToggle.textContent = next === 'dark' ? '' : '';
     });
   </script>
 </body>
