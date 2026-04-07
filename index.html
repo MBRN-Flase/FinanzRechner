@@ -474,12 +474,27 @@
   });
 </script>
 
+<script src="../shared/core/security.js"></script>
+<script src="../shared/core/storage.js"></script>
+<script src="../shared/core/schema.js"></script>
+<script src="../shared/core/premium.js"></script>
+
 <script src="app.js"></script>
 
   <!-- Theme Toggle Script -->
   <script>
     (function(){
-      const saved = localStorage.getItem('fr-theme');
+      // Use MBRNStorage if available, fallback to localStorage
+      const getTheme = () => {
+        if (window.MBRNStorage) return MBRNStorage.get('fr-theme') || 'dark';
+        try { return localStorage.getItem('fr-theme') || 'dark'; } catch { return 'dark'; }
+      };
+      const setTheme = (theme) => {
+        if (window.MBRNStorage) return MBRNStorage.set('fr-theme', theme);
+        try { localStorage.setItem('fr-theme', theme); } catch { /* silent */ }
+      };
+      
+      const saved = getTheme();
       const theme = saved || 'dark';
       document.documentElement.setAttribute('data-theme', theme);
       
@@ -494,7 +509,7 @@
         const current = document.documentElement.getAttribute('data-theme');
         const next = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('fr-theme', next);
+        setTheme(next);
         btn.textContent = next === 'dark' ? '☀' : '☾';
         btn.setAttribute('aria-label', next === 'dark' ? 'Light Mode aktivieren' : 'Dark Mode aktivieren');
       });
