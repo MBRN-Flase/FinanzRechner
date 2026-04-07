@@ -88,7 +88,7 @@ function fetchPrices() {
       setText('btc-price', '~84.000 €');
       setText('eth-price', '~2.000 €');
 
-      console.warn('CoinGecko API Fehler/Rate Limit. Nutze Fallback-Preise.');
+      /* CoinGecko API Fehler - Fallback-Preise werden verwendet */
       var tickerInner = document.getElementById('ticker-inner');
       if (tickerInner && !document.getElementById('api-warning')) {
         var warning = document.createElement('span');
@@ -214,8 +214,8 @@ function exportScreenshot() {
       link.href = canvas.toDataURL('image/png');
       link.click();
       document.body.removeChild(captureElement);
-    }).catch(function(err) {
-      console.error('Screenshot failed:', err);
+    }).catch(function() {
+      /* Screenshot konnte nicht erstellt werden */
       showToast('⚠ Screenshot konnte nicht erstellt werden');
       document.body.removeChild(captureElement);
     });

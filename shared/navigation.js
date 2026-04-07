@@ -60,7 +60,7 @@
   function injectNavigation() {
     // Check if navigation already exists
     if (document.getElementById('mbrn-nav')) {
-      console.log('[MBRN Nav] Already injected, skipping');
+      /* MBRN Nav already injected, skipping */
       return;
     }
 
@@ -81,8 +81,7 @@
 
     // Initialize theme toggle if not already done
     initThemeToggle();
-    
-    console.log('[MBRN Nav] Navigation injected successfully');
+    /* MBRN Nav injected successfully */
   }
 
   // Theme toggle functionality

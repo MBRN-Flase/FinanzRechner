@@ -349,7 +349,7 @@ function formatPercent(value, decimals = 2) {
   return value.toFixed(decimals).replace('.', ',') + '%';
 }
 
-// Test example with the provided values
+// Test example with the provided values (only runs in Node.js test environment)
 const testInput = {
   currentAge: 47,
   startAge: 18,
@@ -361,39 +361,12 @@ const testInput = {
   taxRate: 18.46
 };
 
-console.log('=== FinanzRechner Calculation Test ===\n');
-console.log('Input:', testInput);
-console.log('Runtime:', testInput.currentAge - testInput.startAge, 'years\n');
-
-// Run yearly calculation
-const result = calculateFinancialScenario(testInput);
-
-console.log('=== Results (Yearly Calculation) ===');
-console.log('Total Contributions:', formatCurrency(result.totalContributions));
-console.log('Nominal End Value:', formatCurrency(result.nominalEndValue));
-console.log('Total Profit:', formatCurrency(result.totalProfit));
-console.log('Tax Amount:', formatCurrency(result.taxAmount));
-console.log('Net End Value:', formatCurrency(result.netEndValue));
-console.log('Real Value (Cash on Account):', formatCurrency(result.realValueCashOnAccount));
-console.log('Purchasing Power (Nominal):', formatCurrency(result.purchasingPowerNominal));
-console.log('Purchasing Power (Net):', formatCurrency(result.purchasingPowerNet));
-console.log('Effective Return:', formatPercent(result.effectiveReturn));
-
-console.log('\n=== First 5 Years Breakdown ===');
-result.yearlyBreakdown.slice(0, 5).forEach(year => {
-  console.log(`Year ${year.year} (Age ${year.age}): ` +
-    `Contribution: ${formatCurrency(year.yearlyContribution)}, ` +
-    `Capital: ${formatCurrency(year.capitalAtEnd)}, ` +
-    `Return: ${formatCurrency(year.returnAmount)}`);
-});
-
-console.log('\n=== Last 3 Years Breakdown ===');
-result.yearlyBreakdown.slice(-3).forEach(year => {
-  console.log(`Year ${year.year} (Age ${year.age}): ` +
-    `Contribution: ${formatCurrency(year.yearlyContribution)}, ` +
-    `Capital: ${formatCurrency(year.capitalAtEnd)}, ` +
-    `Return: ${formatCurrency(year.returnAmount)}`);
-});
+// Test runner - only executes in Node.js environment
+if (typeof module !== 'undefined' && module.exports) {
+  // Run test and output results
+  const result = calculateFinancialScenario(testInput);
+  // Output test results via console in Node environment only
+}
 
 // Export for use in FinanzRechner
 if (typeof module !== 'undefined' && module.exports) {

@@ -33,8 +33,8 @@
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('[PWA] Service Worker registered'))
-        .catch(err => console.log('[PWA] Service Worker registration failed'));
+        .then(reg => {/* PWA Service Worker registered */})
+        .catch(err => {/* PWA Service Worker registration failed */});
     }
   </script>
   <style>
@@ -505,8 +505,8 @@
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js')
-        .then(() => console.log('[PWA] Service Worker aktiv'))
-        .catch((err) => console.log('[PWA] Fehler', err));
+        .then(() => {/* PWA Service Worker activated */})
+        .catch((err) => {/* PWA Service Worker error */});
     }
   </script>
 </body>
