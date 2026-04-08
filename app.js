@@ -63,42 +63,41 @@ function showToast(msg) {
 // //  LIVE PREISE
 // 
 function fetchPrices() {
-  var ctrl = new AbortController();
-  var timer = setTimeout(function () { ctrl.abort(); }, 6000);
+  // Use MBRNBackend if available, fallback to static prices
+  if (window.MBRNBackend && typeof MBRNBackend.getCryptoPrices === 'function') {
+    MBRNBackend.getCryptoPrices()
+      .then(function (response) {
+        if (response.success && response.data) {
+          var btc = response.data.bitcoin?.eur;
+          var eth = response.data.ethereum?.eur;
+          setText('btc-price', btc ? formatCurrency(btc) : '~84.000 €');
+          setText('eth-price', eth ? formatCurrency(eth) : '~2.000 €');
+          if (btc) setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
+        } else {
+          throw new Error('Invalid response');
+        }
+      })
+      .catch(function () {
+        setText('btc-price', '~84.000 €');
+        setText('eth-price', '~2.000 €');
+      });
+    return;
+  }
 
-  fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=eur',
-    { signal: ctrl.signal })
-    .then(function (r) {
-      clearTimeout(timer);
-      if (!r.ok) {
-        if (r.status === 429) throw new Error('rate_limit');
-        throw new Error('api_error');
-      }
-      return r.json();
-    })
-    .then(function (d) {
-      var btc = d && d.bitcoin && d.bitcoin.eur;
-      var eth = d && d.ethereum && d.ethereum.eur;
-      setText('btc-price', btc ? formatCurrency(btc) : '~84.000 €');
-      setText('eth-price', eth ? formatCurrency(eth) : '~2.000 €');
-      if (btc) setText('btc-scenario-rate', 'BTC @ ' + formatCurrencyShort(btc));
-    })
-    .catch(function () {
-      clearTimeout(timer);
-      setText('btc-price', '~84.000 €');
-      setText('eth-price', '~2.000 €');
+  // Fallback: Static prices (no external API call due to CSP)
+  setText('btc-price', '~84.000 €');
+  setText('eth-price', '~2.000 €');
 
-      /* CoinGecko API Fehler - Fallback-Preise werden verwendet */
-      var tickerInner = document.getElementById('ticker-inner');
-      if (tickerInner && !document.getElementById('api-warning')) {
-        var warning = document.createElement('span');
-        warning.id = 'api-warning';
-        warning.className = 'ticker-label';
-        warning.style.color = 'var(--gold)';
-        warning.textContent = '(Fallback-Preise)';
-        tickerInner.appendChild(warning);
-      }
-    });
+  /* Using fallback prices - API integration requires backend.js */
+  var tickerInner = document.getElementById('ticker-inner');
+  if (tickerInner && !document.getElementById('api-warning')) {
+    var warning = document.createElement('span');
+    warning.id = 'api-warning';
+    warning.className = 'ticker-label';
+    warning.style.color = 'var(--gold)';
+    warning.textContent = '(Fallback-Preise)';
+    tickerInner.appendChild(warning);
+  }
 }
 
 // //  SLIDER INIT

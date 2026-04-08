@@ -478,6 +478,18 @@
 <script src="../shared/core/storage.js"></script>
 <script src="../shared/core/schema.js"></script>
 <script src="../shared/core/premium.js"></script>
+<script src="../shared/core/backend.js"></script>
+
+<!-- Initialize MBRNBackend -->
+<script>
+  if (window.MBRNBackend) {
+    MBRNBackend.init({
+      apiBase: 'https://mbrn-api.vercel.app/api',
+      fallbackToLocal: true
+    });
+    console.log('[FinanzRechner] MBRNBackend initialized');
+  }
+</script>
 
 <script src="app.js"></script>
 
