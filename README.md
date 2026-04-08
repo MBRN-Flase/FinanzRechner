@@ -1,6 +1,6 @@
 # MBRN Finanz-Rechner 💸
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-green)](https://flase-mbrn.github.io/FinanzRechner/)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-green)](https://mbrn-flase.github.io/FinanzRechner/)
 [![Tests](https://img.shields.io/badge/Tests-Vitest+Playwright-blue)](./package.json)
 
 > **Was wärst du heute wert — wenn du früher angefangen hättest?**
@@ -81,8 +81,8 @@ FinanzRechner/
 
 ## 🔗 Links
 
-- **Live**: https://flase-mbrn.github.io/FinanzRechner/
-- **MBRN Hauptseite**: https://flase-mbrn.github.io/MBRN/
+- **Live**: https://mbrn-flase.github.io/FinanzRechner/
+- **MBRN Hauptseite**: https://mbrn-flase.github.io/MBRN/
 - **Support**: https://ko-fi.com/flasembrn
 
 ## 📄 Lizenz

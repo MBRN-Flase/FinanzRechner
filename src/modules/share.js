@@ -127,7 +127,7 @@ function drawPostCard(ctx, result, activeScenario, width, height) {
 
   ctx.fillStyle = 'rgba(179,136,255,.4)';
   ctx.font = '400 18px monospace';
-  ctx.fillText('flase-mbrn.github.io/FinanzRechner', centerX, height - 22);
+  ctx.fillText('mbrn-flase.github.io/FinanzRechner', centerX, height - 22);
 }
 
 function drawStoryCard(ctx, result, activeScenario, width, height) {
