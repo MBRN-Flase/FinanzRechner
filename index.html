@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MBRN Finanz-Rechner | Zinseszins & Inflation</title>
   <meta name="description" content="Berechne den wahren Wert deiner Zeit. Zinseszins vs. Inflation. Investitionsszenarien mit S&P 500, Bitcoin und Sparkonto. 100% lokal im Browser." />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.coingecko.com https://mbrn-api.vercel.app;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.coingecko.com https://mbrn-api.vercel.app;">
   <meta name="theme-color" content="#8b5cf6">
   <meta property="og:title" content="MBRN Finanz-Rechner | Zinseszins & Inflation" />
   <meta property="og:description" content="Berechne den wahren Wert deiner Zeit. Investitionsszenarien mit Inflation & Steuern." />
@@ -23,20 +23,13 @@
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" /></noscript>
   
   <!-- MBRN Design System -->
-  <link rel="stylesheet" href="./shared/styles/mbrn-theme.css" />
-  <link rel="stylesheet" href="./shared/styles/mbrn-finanz.css" />
+  <link rel="stylesheet" href="../shared/styles/mbrn-theme.css" />
+  <link rel="stylesheet" href="../shared/styles/mbrn-finanz.css" />
   
   <link rel="stylesheet" href="style.css" />
   
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => {/* PWA Service Worker registered */})
-        .catch(err => {/* PWA Service Worker registration failed */});
-    }
-  </script>
   <style>
     /* === FINANZRECHNER THEME SYSTEM === */
     :root {
@@ -116,7 +109,7 @@
 <body>
 
   <!-- THEME TOGGLE -->
-  <button class="fr-theme-btn" id="frThemeBtn" aria-label="Theme wechseln">☀</button>
+  <button class="fr-theme-btn" id="frThemeBtn" aria-label="Theme wechseln">?</button>
 
   <!-- BACKGROUND -->
   <div class="bg-base"></div>
@@ -133,11 +126,11 @@
     <!-- HEADER -->
     <header class="header">
       <span class="header-eyebrow">Finanz-Rechner</span>
-      <h1 class="title">Was wärst du <span class="title-accent">heute wert?</span></h1>
+      <h1 class="title">Was w�rst du <span class="title-accent">heute wert?</span></h1>
       <p class="subtitle">Berechne den wahren Wert deiner Zeit. Zinseszins vs. Inflation.</p>
       <div class="trust-row">
-        <span class="trust-badge">✓ Lokal im Browser</span>
-        <span class="trust-badge">✓ Keine Datenspeicherung</span>
+        <span class="trust-badge">? Lokal im Browser</span>
+        <span class="trust-badge">? Keine Datenspeicherung</span>
       </div>
     </header>
 
@@ -157,7 +150,7 @@
 
     <!-- INPUT SECTION -->
     <section class="input-card">
-      <p class="card-eyebrow">✦ Deine Parameter</p>
+      <p class="card-eyebrow">? Deine Parameter</p>
 
       <!-- Alter -->
       <div class="input-group">
@@ -185,7 +178,7 @@
       <div class="input-group">
         <div class="input-label-row">
           <label class="input-label">Monatliche Sparrate</label>
-          <span class="input-value-badge" id="badge-monthly">250 €</span>
+          <span class="input-value-badge" id="badge-monthly">250 �</span>
         </div>
         <input type="range" class="slider" id="slider-monthly" min="0" max="2500" step="50" value="250" />
         <input type="number" class="input-field" id="monthly" value="250" style="display:none" />
@@ -194,7 +187,7 @@
       <!-- Dynamik -->
       <div class="input-group">
         <div class="input-label-row">
-          <label class="input-label">Jährliche Erhöhung (Dynamik)</label>
+          <label class="input-label">J�hrliche Erh�hung (Dynamik)</label>
           <span class="input-value-badge" id="badge-dynamic">0 %</span>
         </div>
         <input type="range" class="slider" id="slider-dynamic" min="0" max="10" step="1" value="0" />
@@ -206,7 +199,7 @@
       <div class="input-group" style="margin-top:4px">
         <label class="input-label">Startkapital (Einmalig)</label>
         <div class="input-row">
-          <span class="input-prefix">€</span>
+          <span class="input-prefix">�</span>
           <input type="number" class="input-field input-field--pfx" id="lump" value="0" min="0" />
         </div>
       </div>
@@ -230,31 +223,31 @@
         <label class="input-label">Investment-Szenario</label>
         <div class="scenario-grid">
           <button class="scenario-btn active" data-scenario="sp500">
-            <span class="scenario-icon">🇺🇸</span>
+            <span class="scenario-icon">????</span>
             <span class="scenario-name">S&P 500</span>
             <span class="scenario-rate">~10.2% p.a.</span>
           </button>
           <button class="scenario-btn" data-scenario="world-etf">
-            <span class="scenario-icon">🌍</span>
+            <span class="scenario-icon">??</span>
             <span class="scenario-name">World ETF</span>
             <span class="scenario-rate">~8.0% p.a.</span>
           </button>
           <button class="scenario-btn" data-scenario="btc">
-            <span class="scenario-icon">₿</span>
+            <span class="scenario-icon">?</span>
             <span class="scenario-name">Bitcoin</span>
             <span class="scenario-rate" id="btc-scenario-rate">~25.0% p.a.</span>
           </button>
           <button class="scenario-btn" data-scenario="savings">
-            <span class="scenario-icon">🏦</span>
+            <span class="scenario-icon">??</span>
             <span class="scenario-name">Sparkonto</span>
             <span class="scenario-rate">~2.0% p.a.</span>
           </button>
         </div>
-        <p class="scenario-disclaimer" id="scenario-disclaimer">Historische Durchschnittsrendite S&P 500 (1957–2024). Vergangene Performance ist keine Garantie.</p>
+        <p class="scenario-disclaimer" id="scenario-disclaimer">Historische Durchschnittsrendite S&P 500 (1957�2024). Vergangene Performance ist keine Garantie.</p>
       </div>
 
       <button class="btn-calculate" id="btn-calculate">
-        <span class="btn-calc-icon" id="calc-icon">✦</span>
+        <span class="btn-calc-icon" id="calc-icon">?</span>
         <span id="calc-text">Berechnen</span>
       </button>
     </section>
@@ -264,36 +257,36 @@
       
       <!-- HERO -->
       <div class="result-hero">
-        <p class="hero-label">Dein potenzielles Vermögen</p>
-        <div class="hero-number" id="hook-number">—</div>
-        <p class="hero-sub" id="hook-sub">Entspricht einer heutigen Kaufkraft von ca. —</p>
+        <p class="hero-label">Dein potenzielles Verm�gen</p>
+        <div class="hero-number" id="hook-number">�</div>
+        <p class="hero-sub" id="hook-sub">Entspricht einer heutigen Kaufkraft von ca. �</p>
         <p class="hero-kaufkraft-info" id="kaufkraft-info" style="display:none">
-          <span class="info-icon" title="Inflation halbiert den Wert deines Geldes ca. alle 10-15 Jahre (bei 5-7%). Diese Zahl zeigt dir, was du dir im Jahr 2026 für die Endsumme kaufen könntest.">ℹ️</span>
+          <span class="info-icon" title="Inflation halbiert den Wert deines Geldes ca. alle 10-15 Jahre (bei 5-7%). Diese Zahl zeigt dir, was du dir im Jahr 2026 f�r die Endsumme kaufen k�nntest.">??</span>
           <span class="kaufkraft-text"></span>
         </p>
         <div class="tax-hint" id="tax-hint" style="display:none">
-          <span>ℹ</span>
-          <span id="tax-after">—</span>
+          <span>?</span>
+          <span id="tax-after">�</span>
         </div>
       </div>
 
       <!-- KONTEXT BOX (neues Feature) -->
       <div class="context-box" id="context-box">
-        <p class="context-label">✦ Das entspricht ungefähr</p>
+        <p class="context-label">? Das entspricht ungef�hr</p>
         <div class="context-grid" id="context-grid"></div>
       </div>
 
       <!-- VERGLEICH-KARTEN -->
       <div class="compare-grid">
         <div class="compare-card compare-card--bad">
-          <p class="compare-label">Fiat · Inflation</p>
-          <div class="compare-value" id="val-fiat">—</div>
+          <p class="compare-label">Fiat � Inflation</p>
+          <div class="compare-value" id="val-fiat">�</div>
           <p class="compare-desc">Realer Wert auf dem Konto</p>
         </div>
         <div class="compare-card compare-card--good">
           <p class="compare-label" id="invest-label">Investiert</p>
-          <div class="compare-value compare-value--good" id="val-invest">—</div>
-          <p class="compare-desc">Was du stattdessen hättest</p>
+          <div class="compare-value compare-value--good" id="val-invest">�</div>
+          <p class="compare-desc">Was du stattdessen h�ttest</p>
         </div>
       </div>
 
@@ -321,7 +314,7 @@
       <div class="wow-meter-wrap">
         <div class="wow-header">
           <span class="wow-title">Performance-Score</span>
-          <span class="wow-label" id="wow-label">—</span>
+          <span class="wow-label" id="wow-label">�</span>
         </div>
         <div class="wow-track">
           <div class="wow-fill" id="wow-fill" style="width:0%"></div>
@@ -336,10 +329,10 @@
       <!-- CHART -->
       <div class="chart-card">
         <div class="chart-header">
-          <p class="chart-title">Vermögensentwicklung</p>
+          <p class="chart-title">Verm�gensentwicklung</p>
           <div class="chart-legend">
-            <span class="leg-invest">─ Investiert</span>
-            <span class="leg-fiat">╌ Konto</span>
+            <span class="leg-invest">- Investiert</span>
+            <span class="leg-fiat">? Konto</span>
           </div>
         </div>
         <div class="chart-wrap">
@@ -347,10 +340,10 @@
         </div>
       </div>
 
-      <!-- JAHRESTABELLE (aufklappbar — neues Feature) -->
+      <!-- JAHRESTABELLE (aufklappbar � neues Feature) -->
       <div class="table-section">
         <button class="btn-toggle-table" id="btn-toggle-table">
-          <span id="table-toggle-icon">▶</span> Jahres-Übersicht anzeigen
+          <span id="table-toggle-icon">?</span> Jahres-�bersicht anzeigen
         </button>
         <div class="year-table-wrap" id="year-table-wrap" style="display:none">
           <div class="year-table-scroll">
@@ -371,13 +364,13 @@
         </div>
       </div>
 
-      <!-- REVERSE-RECHNER: Wann bin ich Millionär? (neues Feature) -->
+      <!-- REVERSE-RECHNER: Wann bin ich Million�r? (neues Feature) -->
       <div class="reverse-card">
-        <p class="card-eyebrow">✦ Reverse-Rechner</p>
+        <p class="card-eyebrow">? Reverse-Rechner</p>
         <p class="reverse-title">Wann erreichst du dein Ziel?</p>
         <div class="reverse-row">
           <div class="input-row reverse-input">
-            <span class="input-prefix">€</span>
+            <span class="input-prefix">�</span>
             <input type="number" class="input-field input-field--pfx" id="target-amount" value="1000000" min="1000" />
           </div>
           <button class="btn-reverse" id="btn-reverse">Berechnen</button>
@@ -389,29 +382,29 @@
 
       <!-- SHARE -->
       <div class="share-row">
-        <button class="btn-share-result" id="btn-share-result">🔥 Teilen</button>
-        <button class="btn-save-image" id="btn-save-image">⬇ Post (1:1)</button>
-        <button class="btn-save-story" id="btn-save-story">📱 Story (9:16)</button>
+        <button class="btn-share-result" id="btn-share-result">?? Teilen</button>
+        <button class="btn-save-image" id="btn-save-image">? Post (1:1)</button>
+        <button class="btn-save-story" id="btn-save-story">?? Story (9:16)</button>
       </div>
 
       <!-- CTA -->
       <div class="cta-box">
-        <p class="cta-label">✦ Jetzt ist der beste Zeitpunkt</p>
+        <p class="cta-label">? Jetzt ist der beste Zeitpunkt</p>
         <p class="cta-headline">Fang heute an.</p>
         <p class="cta-sub">Die beste Investition ist die, die du nicht aufgeschoben hast.</p>
         <div class="cta-buttons">
           <!-- Affiliate Links Struktur -->
-          <a class="btn-cta-primary" href="https://ref.trade.re/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Trade Republic (Empfehlung) →</a>
-          <a class="btn-cta-secondary" href="https://de.scalable.capital/einladung/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Scalable Capital →</a>
+          <a class="btn-cta-primary" href="https://ref.trade.re/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Trade Republic (Empfehlung) ?</a>
+          <a class="btn-cta-secondary" href="https://de.scalable.capital/einladung/YOUR_AFFILIATE_ID" target="_blank" rel="noopener">Scalable Capital ?</a>
         </div>
-        <p class="cta-disclaimer">Keine Finanzberatung. Eigenverantwortlich handeln. Steuerliche Beratung individuell prüfen.</p>
+        <p class="cta-disclaimer">Keine Finanzberatung. Eigenverantwortlich handeln. Steuerliche Beratung individuell pr�fen.</p>
       </div>
 
     </section>
 
 <!-- SUPPORT -->
 <section class="support-section">
-  <a class="btn-kofi" href="https://ko-fi.com/flasembrn" target="_blank" rel="noopener">☕ Dieses Tool unterstützen</a>
+  <a class="btn-kofi" href="https://ko-fi.com/flasembrn" target="_blank" rel="noopener">? Dieses Tool unterst�tzen</a>
 </section>
 
 <!-- DATENSCHUTZ / IMPRESSUM MODAL (Unified MBRN) -->
@@ -419,20 +412,20 @@
   <div class="mbrn-legal-modal">
     <div class="mbrn-legal-modal-header">
       <h3 class="mbrn-legal-modal-title">Impressum & Datenschutz</h3>
-      <button class="mbrn-legal-modal-close" onclick="closeLegalModal()" type="button">✕</button>
+      <button class="mbrn-legal-modal-close" type="button">?</button>
     </div>
     <div class="mbrn-legal-modal-content">
-      <p><strong>Keine Datenspeicherung</strong><br>Alle Berechnungen erfolgen vollständig lokal in deinem Browser (JavaScript). Es werden keine Daten an Server übertragen.</p>
+      <p><strong>Keine Datenspeicherung</strong><br>Alle Berechnungen erfolgen vollst�ndig lokal in deinem Browser (JavaScript). Es werden keine Daten an Server �bertragen.</p>
       
-      <p><strong>Externe Dienste</strong><br>Live-Kurse werden von der öffentlichen CoinGecko API abgefragt. Dabei wird deine IP-Adresse übertragen.</p>
+      <p><strong>Externe Dienste</strong><br>Live-Kurse werden von der �ffentlichen CoinGecko API abgefragt. Dabei wird deine IP-Adresse �bertragen.</p>
       
-      <p><strong>Impressum (Angaben gemäß § 5 TMG)</strong><br>Max Mustermann<br>Musterstraße 1<br>12345 Musterstadt<br>Kontakt: kontakt@mbrn-tools.de</p>
+      <p><strong>Impressum (Angaben gem�� � 5 TMG)</strong><br>Max Mustermann<br>Musterstra�e 1<br>12345 Musterstadt<br>Kontakt: kontakt@mbrn-tools.de</p>
       
       <p><strong>Datenschutz (DSGVO)</strong><br>Diese Webseite nutzt Google Fonts. Es findet kein Tracking statt. Alle Berechnungen erfolgen lokal im Browser.</p>
       
-      <p><strong>Keine Finanzberatung</strong><br>Dieses Tool dient ausschließlich der illustrativen Darstellung. Es stellt keine Anlageberatung dar.</p>
+      <p><strong>Keine Finanzberatung</strong><br>Dieses Tool dient ausschlie�lich der illustrativen Darstellung. Es stellt keine Anlageberatung dar.</p>
       
-      <p class="privacy-small">© 2026 MBRN Tools · Built to be used.</p>
+      <p class="privacy-small">� 2026 MBRN Tools � Built to be used.</p>
     </div>
   </div>
 </div>
@@ -441,7 +434,7 @@
 <footer class="mbrn-footer">
   <div class="mbrn-footer-inner">
     <div class="mbrn-footer-brand">
-      <span class="mbrn-footer-brand-logo">✦</span>
+      <span class="mbrn-footer-brand-logo">?</span>
       <span>MBRN Tools</span>
     </div>
     
@@ -453,99 +446,16 @@
       <a href="datenschutz.html" class="mbrn-footer-link">Datenschutz</a>
     </div>
     
-    <div class="mbrn-footer-copyright">© 2026 MBRN. Built to be used.</div>
+    <div class="mbrn-footer-copyright">� 2026 MBRN. Built to be used.</div>
   </div>
 </footer>
-
-<script>
-  function openLegalModal() {
-    document.getElementById('legal-modal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeLegalModal() {
-    document.getElementById('legal-modal').classList.remove('active');
-    document.body.style.overflow = '';
-  }
-  document.getElementById('legal-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeLegalModal();
-  });
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeLegalModal();
-  });
-</script>
-
-<script src="../shared/core/security.js"></script>
-<script src="../shared/core/storage.js"></script>
-<script src="../shared/core/schema.js"></script>
-<script src="../shared/core/premium.js"></script>
-<script src="../shared/core/backend.js"></script>
-
-<!-- Initialize MBRNBackend -->
-<script>
-  if (window.MBRNBackend) {
-    MBRNBackend.init({
-      apiBase: 'https://mbrn-api.vercel.app/api',
-      fallbackToLocal: true
-    });
-    console.log('[FinanzRechner] MBRNBackend initialized');
-  }
-</script>
-
-<!-- MBRN Monitoring & Observability -->
-<script src="../shared/utils/logger.js"></script>
-<script src="../shared/core/error.js"></script>
-<script src="../shared/core/analytics.js"></script>
-
-  <!-- Initialize Monitoring (external for CSP) -->
-  <script src="monitoring-init.js"></script>
 
   <!-- Shared Navigation -->
 <script src="../shared/navigation.js"></script>
 
-<script src="app.js"></script>
-
-  <!-- Theme Toggle Script -->
-  <script>
-    (function(){
-      // Use MBRNStorage if available, fallback to localStorage
-      const getTheme = () => {
-        if (window.MBRNStorage) return MBRNStorage.get('fr-theme') || 'dark';
-        try { return localStorage.getItem('fr-theme') || 'dark'; } catch { return 'dark'; }
-      };
-      const setTheme = (theme) => {
-        if (window.MBRNStorage) return MBRNStorage.set('fr-theme', theme);
-        try { localStorage.setItem('fr-theme', theme); } catch { /* silent */ }
-      };
-      
-      const saved = getTheme();
-      const theme = saved || 'dark';
-      document.documentElement.setAttribute('data-theme', theme);
-      
-      const btn = document.getElementById('frThemeBtn');
-      if(!btn) return;
-      
-      const isDark = saved === 'dark';
-      btn.textContent = isDark ? '☀' : '☾';
-      btn.setAttribute('aria-label', isDark ? 'Light Mode aktivieren' : 'Dark Mode aktivieren');
-      
-      btn.addEventListener('click', function(){
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        setTheme(next);
-        btn.textContent = next === 'dark' ? '☀' : '☾';
-        btn.setAttribute('aria-label', next === 'dark' ? 'Light Mode aktivieren' : 'Dark Mode aktivieren');
-      });
-    })();
-  </script>
+<script type="module" src="src/main.js"></script>
 
   <!-- PWA Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => {/* PWA Service Worker activated */})
-        .catch((err) => {/* PWA Service Worker error */});
-    }
-  </script>
 </body>
 </html>
+
