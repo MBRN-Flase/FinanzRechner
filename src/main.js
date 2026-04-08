@@ -1,8 +1,5 @@
 import { formatCurrency, formatCurrencyShort } from './core/formatters.js';
 import { fetchPrices } from './modules/prices.js';
-// Global Core System - Silent Integration (Phase 1: Infrastructure)
-import { createSchema, createEventBus } from '../../shared/core/index.mjs';
-import { ACTIONS, EVENTS, STORAGE_KEYS } from '../../shared/core/keys.mjs';
 import { createStorageAdapter } from '../../shared/core/storage.mjs';
 import { createBackendClient } from '../../shared/core/backend.mjs';
 import { createThemeController } from '../../shared/core/theme.mjs';
@@ -19,33 +16,8 @@ const state = {
   debounceTimer: null,
 };
 
-// Global Core System - Finance Schema (Silent Validation)
-const financeSchema = createSchema({
-  version: 1,
-  default: {
-    presets: [],
-    history: [],
-    lastCalculation: null,
-    _version: 1
-  },
-  validate: (data) => {
-    // Silent validation - only check structure, don't throw
-    if (data.presets && !Array.isArray(data.presets)) {
-      console.warn('[Finance] presets should be array');
-    }
-    if (data.history && !Array.isArray(data.history)) {
-      console.warn('[Finance] history should be array');
-    }
-    return true; // Always pass to not break existing flow
-  },
-  migrations: {}
-});
-
 const dom = createFinanceDom(document);
-const storage = createStorageAdapter({ 
-  prefix: 'mbrn_',
-  schema: financeSchema  // Schema attached but non-blocking
-});
+const storage = createStorageAdapter({ prefix: 'mbrn_' });
 const backend = createBackendClient({ apiBase: '', storage, eventKey: 'finanz_events' });
 const themeController = createThemeController({
   documentRef: document,
@@ -64,21 +36,6 @@ const notificationController = createFinanceNotificationController({
   chartController,
   sliderController,
 });
-
-// Global Core System - Event Bus (Ready for future event-driven features)
-const events = createEventBus({ 
-  name: 'finance', 
-  crossTab: false  // Local events only for now
-});
-
-// Example: Emit calculation events (non-blocking, for analytics/debugging)
-function emitCalculationEvent(type, data) {
-  try {
-    events.emit(EVENTS.FINANCE_CALC_START, { type, timestamp: Date.now() });
-  } catch (e) {
-    // Silent fail - don't break existing functionality
-  }
-}
 
 function initTheme() {
   themeController.init();
